@@ -1,0 +1,506 @@
+import { Button, LineEdit } from "std-widgets.slint";
+import "../fonts/MaterialIconsRound-Regular.otf";
+import "../fonts/Inter-VariableFont_opsz,wght.ttf";
+import "../fonts/RobotoMono-VariableFont_wght.ttf";
+
+global Glacier {
+    in-out property <color> bg: #FFFFFF;
+    in-out property <color> surface: #F8FAFF;
+    in-out property <color> surface2: #EEF3FF;
+    in-out property <color> surface3: #E3EEFF;
+    in-out property <color> card-bg: #F8FAFF;
+    in-out property <color> card-hover: #EEF3FF;
+    in-out property <color> outline: #B0C4E8;
+    in-out property <color> outline2: #D3E3FD;
+    in-out property <color> primary: #0B57D0;
+    in-out property <color> primary-c: #C2E7FF;
+    in-out property <color> on-primary: #FFFFFF;
+    in-out property <color> on-primary-c: #001D35;
+    in-out property <color> on-surface: #001D35;
+    in-out property <color> on-surface-v: #004A77;
+    in-out property <color> success: #146C2E;
+    in-out property <color> warn: #7D5700;
+    in-out property <color> danger: #B3261E;
+    in-out property <color> cat-work: #0B57D0;
+    in-out property <color> cat-finance: #006E2E;
+    in-out property <color> cat-personal: #6750A4;
+}
+
+struct AccountData {
+    icon: string,
+    issuer: string,
+    label: string,
+    username: string,
+    password: string,
+    cat: string,
+    is-totp: bool,
+    otp-code: string,
+    timer: int,
+}
+
+// ═══ Traffic Lights ═══
+component TrafficLights inherits HorizontalLayout {
+    spacing: 6px;
+    padding-right: 4px;
+    Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #FF5F57; }
+    Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E; }
+    Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #28C840; }
+}
+
+// ═══ Timer Ring ═══
+component TimerRing inherits Rectangle {
+    in property <int> seconds: 30;
+    in property <color> ring-color: Glacier.primary;
+
+    width: 38px; height: 38px;
+
+    // bg ring
+    Path {
+        width: parent.width; height: parent.height;
+        stroke: Glacier.outline2; stroke-width: 2.5px;
+        fill: #00000000;
+        commands: "M 19 3 A 16 16 0 1 1 18.99 3";
+    }
+    // progress ring (fractional opacity)
+    Path {
+        width: parent.width; height: parent.height;
+        stroke: ring-color; stroke-width: 2.5px;
+        fill: #00000000;
+        opacity: root.seconds / 30.0;
+        commands: "M 19 3 A 16 16 0 1 1 18.99 3";
+    }
+    // number
+    Text {
+        text: "\{root.seconds}";
+        font-size: 10px; font-weight: 700;
+        font-family: "Roboto Mono";
+        color: ring-color;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        x: 0; y: 0;
+        width: parent.width; height: parent.height;
+    }
+}
+
+// ═══ Copy Chip ═══
+component CopyChip inherits Rectangle {
+    in property <string> chip-label: "复制";
+    callback clicked();
+    height: 28px; border-radius: 8px;
+    background: Glacier.primary-c;
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 12px;
+        spacing: 3px; alignment: center;
+        Text { font-family: "Material Icons Round"; text: "content_copy"; font-size: 13px; color: Glacier.on-primary-c; vertical-alignment: center; }
+        Text { text: root.chip-label; font-size: 11px; font-weight: 700; color: Glacier.on-primary-c; vertical-alignment: center; }
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// ═══ TOTP Card ═══
+component TotpCard inherits Rectangle {
+    in property <AccountData> account;
+    in property <bool> is-revealed;
+    callback toggle-reveal();
+    callback copy-otp();
+
+    height: is-revealed ? 120px : 78px;
+    border-radius: 14px;
+    background: ta1.has-hover ? Glacier.card-hover : Glacier.card-bg;
+    border-width: 1px; border-color: Glacier.outline2;
+    clip: true;
+    animate height { duration: 250ms; easing: ease-out; }
+
+    Rectangle {
+        x: 0; y: 0; width: 3px; height: parent.height;
+        border-radius: 3px;
+        background: account.cat == "work" ? Glacier.cat-work : account.cat == "finance" ? Glacier.cat-finance : Glacier.cat-personal;
+    }
+
+    VerticalLayout {
+        padding-left: 18px; padding-right: 14px; padding-top: 12px; padding-bottom: 12px;
+        spacing: 8px;
+
+        HorizontalLayout {
+            spacing: 10px;
+            Rectangle {
+                width: 36px; height: 36px; border-radius: 10px; background: Glacier.surface3;
+                Text { text: account.icon; font-size: 18px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            VerticalLayout {
+                spacing: 1px;
+                Text { text: account.issuer; font-size: 14px; font-weight: 600; color: Glacier.on-surface; overflow: elide; }
+                Text { text: account.label; font-size: 11px; color: Glacier.on-surface-v; overflow: elide; }
+            }
+            Rectangle {
+                width: 32px; height: 32px;
+                Text { text: "more_vert"; font-family: "Material Icons Round"; font-size: 18px; color: Glacier.on-surface-v; horizontal-alignment: center; vertical-alignment: center; }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            Text {
+                text: root.is-revealed ? account.otp-code : "••• •••";
+                font-family: "Roboto Mono"; font-size: 26px; font-weight: 500;
+                color: root.is-revealed ? Glacier.primary : Glacier.on-surface-v;
+                horizontal-stretch: 1; vertical-alignment: center;
+            }
+            if root.is-revealed: CopyChip { chip-label: "复制"; clicked => { root.copy-otp(); } }
+            if !root.is-revealed && ta1.has-hover: Text {
+                text: "点击查看"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; vertical-alignment: center;
+            }
+            if account.is-totp: TimerRing {
+                seconds: account.timer;
+                ring-color: account.timer <= 5 ? Glacier.danger : account.timer <= 10 ? Glacier.warn : account.cat == "work" ? Glacier.cat-work : account.cat == "finance" ? Glacier.cat-finance : Glacier.cat-personal;
+            }
+        }
+
+        if root.is-revealed && account.password != "": HorizontalLayout {
+            spacing: 8px; alignment: center;
+            Text { text: "用户"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; vertical-alignment: center; }
+            Text { text: account.username; font-family: "Roboto Mono"; font-size: 13px; color: Glacier.on-surface; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+            Text { text: "密码"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; vertical-alignment: center; }
+            Text { text: "••••••••"; font-family: "Roboto Mono"; font-size: 13px; color: Glacier.on-surface-v; letter-spacing: 2px; vertical-alignment: center; horizontal-stretch: 1; }
+            CopyChip { chip-label: "复制"; clicked => { root.copy-otp(); } }
+        }
+    }
+
+    ta1 := TouchArea { clicked => { root.toggle-reveal(); } }
+}
+
+// ═══ Password Card ═══
+component PasswordCard inherits Rectangle {
+    in property <AccountData> account;
+    in property <bool> is-revealed;
+    callback toggle-reveal();
+    callback copy-pw();
+
+    height: 78px; border-radius: 14px;
+    background: ta2.has-hover ? Glacier.card-hover : Glacier.card-bg;
+    border-width: 1px; border-color: Glacier.outline2;
+
+    Rectangle {
+        x: 0; y: 0; width: 3px; height: parent.height;
+        border-radius: 3px;
+        background: account.cat == "work" ? Glacier.cat-work : account.cat == "finance" ? Glacier.cat-finance : Glacier.cat-personal;
+    }
+
+    VerticalLayout {
+        padding-left: 18px; padding-right: 14px; padding-top: 12px; padding-bottom: 12px;
+        spacing: 10px;
+
+        HorizontalLayout {
+            spacing: 10px;
+            Rectangle {
+                width: 36px; height: 36px; border-radius: 10px; background: Glacier.surface3;
+                Text { text: account.icon; font-size: 18px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            VerticalLayout {
+                spacing: 1px;
+                Text { text: account.issuer; font-size: 14px; font-weight: 600; color: Glacier.on-surface; overflow: elide; }
+                Text { text: account.label; font-size: 11px; color: Glacier.on-surface-v; overflow: elide; }
+            }
+            Rectangle {
+                width: 32px; height: 32px;
+                Text { text: "more_vert"; font-family: "Material Icons Round"; font-size: 18px; color: Glacier.on-surface-v; horizontal-alignment: center; vertical-alignment: center; }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            Text {
+                text: root.is-revealed ? account.password : "••••••••";
+                font-family: "Roboto Mono"; font-size: 18px; font-weight: 500;
+                color: root.is-revealed ? Glacier.on-surface : Glacier.on-surface-v;
+                horizontal-stretch: 1; vertical-alignment: center;
+            }
+            if !root.is-revealed && ta2.has-hover: Text {
+                text: "点击查看"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; vertical-alignment: center;
+            }
+            if root.is-revealed: CopyChip { chip-label: "复制"; clicked => { root.copy-pw(); } }
+        }
+    }
+
+    ta2 := TouchArea { clicked => { root.toggle-reveal(); } }
+}
+
+// ═══ Section Header ═══
+component SectionHeader inherits HorizontalLayout {
+    in property <string> title;
+    in property <int> count;
+    in property <color> dot-color;
+    padding-left: 16px; padding-right: 16px; spacing: 8px; height: 28px;
+    Rectangle { width: 7px; height: 7px; border-radius: 3.5px; background: dot-color; }
+    Text { text: title; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; color: Glacier.on-surface-v; vertical-alignment: center; }
+    Rectangle { height: 1px; background: Glacier.outline2; vertical-stretch: 1; }
+    Text { text: "\{count}"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; vertical-alignment: center; }
+}
+
+// ═══ Search Bar ═══
+component SearchBar inherits Rectangle {
+    height: 42px; border-radius: 21px; background: Glacier.surface3;
+    border-width: 1px; border-color: Glacier.outline2;
+    HorizontalLayout {
+        padding-left: 14px; padding-right: 14px; spacing: 6px; alignment: center;
+        Text { text: "search"; font-family: "Material Icons Round"; font-size: 18px; color: Glacier.on-surface-v; vertical-alignment: center; }
+        LineEdit { placeholder-text: "搜索账户…"; }
+    }
+}
+
+// ═══ Bottom Nav ═══
+component BottomNav inherits Rectangle {
+    height: 68px; background: Glacier.surface2;
+    callback add-clicked();
+
+    HorizontalLayout {
+        padding-left: 4px; padding-right: 4px; alignment: space-around;
+
+        VerticalLayout {
+            spacing: 2px; alignment: center;
+            Rectangle {
+                width: 56px; height: 28px; border-radius: 14px; background: Glacier.primary-c;
+                Text { text: "key"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-primary-c; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            Text { text: "账户"; font-size: 10px; font-weight: 600; color: Glacier.on-primary-c; horizontal-alignment: center; }
+        }
+        VerticalLayout {
+            spacing: 2px; alignment: center;
+            Text { text: "folder_open"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-surface-v; horizontal-alignment: center; }
+            Text { text: "分组"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; horizontal-alignment: center; }
+        }
+        Rectangle {
+            width: 52px; height: 52px; border-radius: 14px; background: Glacier.primary;
+            Text { text: "add"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-primary; horizontal-alignment: center; vertical-alignment: center; }
+            TouchArea { clicked => { root.add-clicked(); } }
+        }
+        VerticalLayout {
+            spacing: 2px; alignment: center;
+            Text { text: "shield"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-surface-v; horizontal-alignment: center; }
+            Text { text: "安全"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; horizontal-alignment: center; }
+        }
+        VerticalLayout {
+            spacing: 2px; alignment: center;
+            Text { text: "settings"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-surface-v; horizontal-alignment: center; }
+            Text { text: "设置"; font-size: 10px; font-weight: 600; color: Glacier.on-surface-v; horizontal-alignment: center; }
+        }
+    }
+}
+
+// ═══ Lock Screen ═══
+component LockScreen inherits Rectangle {
+    in property <int> pin-len;
+    callback key-press(string);
+    callback delete-press();
+    callback unlock-bio();
+
+    background: Glacier.surface;
+    z: 200;
+
+    VerticalLayout {
+        alignment: center; spacing: 20px;
+
+        Rectangle {
+            width: 72px; height: 72px; border-radius: 22px; background: Glacier.primary-c;
+            Text { text: "lock"; font-family: "Material Icons Round"; font-size: 36px; color: Glacier.on-primary-c; horizontal-alignment: center; vertical-alignment: center; }
+        }
+        Text { text: "MFA Manager"; font-size: 24px; font-weight: 700; color: Glacier.on-surface; horizontal-alignment: center; }
+        Text { text: "输入 PIN 码解锁"; font-size: 13px; color: Glacier.on-surface-v; horizontal-alignment: center; }
+
+        // PIN dots
+        HorizontalLayout {
+            spacing: 12px; alignment: center;
+            for i in 6: Rectangle {
+                width: 12px; height: 12px; border-radius: 6px;
+                border-width: 2px;
+                border-color: pin-len > i ? Glacier.primary : Glacier.outline;
+                background: pin-len > i ? Glacier.primary : #00000000;
+            }
+        }
+
+        // keypad row 1: 1,2,3
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            for key in ["1","2","3"]: Rectangle {
+                width: 68px; height: 68px; border-radius: 34px;
+                background: kpa.has-hover ? Glacier.primary-c : Glacier.surface3;
+                Text {
+                    text: key;
+                    font-size: 22px;
+                    color: kpa.has-hover ? Glacier.on-primary-c : Glacier.on-surface;
+                    horizontal-alignment: center; vertical-alignment: center;
+                }
+                kpa := TouchArea { clicked => { root.key-press(key); } }
+            }
+        }
+        // keypad row 2: 4,5,6
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            for key in ["4","5","6"]: Rectangle {
+                width: 68px; height: 68px; border-radius: 34px;
+                background: kpb.has-hover ? Glacier.primary-c : Glacier.surface3;
+                Text {
+                    text: key;
+                    font-size: 22px;
+                    color: kpb.has-hover ? Glacier.on-primary-c : Glacier.on-surface;
+                    horizontal-alignment: center; vertical-alignment: center;
+                }
+                kpb := TouchArea { clicked => { root.key-press(key); } }
+            }
+        }
+        // keypad row 3: 7,8,9
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            for key in ["7","8","9"]: Rectangle {
+                width: 68px; height: 68px; border-radius: 34px;
+                background: kpc.has-hover ? Glacier.primary-c : Glacier.surface3;
+                Text {
+                    text: key;
+                    font-size: 22px;
+                    color: kpc.has-hover ? Glacier.on-primary-c : Glacier.on-surface;
+                    horizontal-alignment: center; vertical-alignment: center;
+                }
+                kpc := TouchArea { clicked => { root.key-press(key); } }
+            }
+        }
+        // keypad row 4: bio, 0, del
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            Rectangle {
+                width: 68px; height: 68px; border-radius: 34px;
+                Text { text: "fingerprint"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-surface-v; horizontal-alignment: center; vertical-alignment: center; }
+                TouchArea { clicked => { root.unlock-bio(); } }
+            }
+            Rectangle {
+                width: 68px; height: 68px; border-radius: 34px;
+                background: k0.has-hover ? Glacier.primary-c : Glacier.surface3;
+                Text {
+                    text: "0"; font-size: 22px;
+                    color: k0.has-hover ? Glacier.on-primary-c : Glacier.on-surface;
+                    horizontal-alignment: center; vertical-alignment: center;
+                }
+                k0 := TouchArea { clicked => { root.key-press("0"); } }
+            }
+            Rectangle {
+                width: 68px; height: 68px; border-radius: 34px;
+                Text { text: "backspace"; font-family: "Material Icons Round"; font-size: 22px; color: Glacier.on-surface-v; horizontal-alignment: center; vertical-alignment: center; }
+                TouchArea { clicked => { root.delete-press(); } }
+            }
+        }
+    }
+}
+
+// ═══ MAIN WINDOW ═══
+export component MainWindow inherits Window {
+    title: "MFA Manager";
+    width: 400px; height: 720px;
+    background: Glacier.bg;
+
+    in-out property <bool> is-locked: false;
+    in-out property <int> pin-len: 0;
+    in-out property <string> pin-str: "";
+    in-out property <int> revealed-id: -1;
+    in-out property <string> snack-msg: "";
+    in-out property <bool> snack-show: false;
+
+    property <[AccountData]> accounts: [
+        { icon: "🐙", issuer: "GitHub", label: "user@example.com", username: "user@example.com", password: "Gh!tHub#2024", cat: "work", is-totp: true, otp-code: "482 193", timer: 12 },
+        { icon: "☁️", issuer: "AWS", label: "admin@company.com", username: "admin@company.com", password: "Aws$ecure99", cat: "work", is-totp: true, otp-code: "735 028", timer: 22 },
+        { icon: "💬", issuer: "Slack", label: "work@company.com", username: "work@company.com", password: "Sl@ck2024!", cat: "work", is-totp: true, otp-code: "901 274", timer: 6 },
+        { icon: "🏦", issuer: "招商银行", label: "138****8888", username: "13888888888", password: "Cmb@2024bank", cat: "finance", is-totp: true, otp-code: "318 450", timer: 25 },
+        { icon: "📘", issuer: "Facebook", label: "my@gmail.com", username: "my@gmail.com", password: "Fb@pass!23", cat: "personal", is-totp: true, otp-code: "573 916", timer: 15 },
+        { icon: "🌐", issuer: "路由器", label: "192.168.1.1", username: "admin", password: "router2024", cat: "personal", is-totp: false, otp-code: "", timer: 0 },
+        { icon: "💼", issuer: "公司内网", label: "vpn.company.com", username: "zhang.san", password: "Corp#Vpn2024", cat: "work", is-totp: false, otp-code: "", timer: 0 },
+    ];
+
+    VerticalLayout {
+        // Top Bar
+        Rectangle {
+            height: 56px; background: Glacier.surface2;
+            HorizontalLayout {
+                padding-left: 12px; padding-right: 8px; alignment: space-between;
+                TrafficLights {}
+                VerticalLayout {
+                    spacing: 0; alignment: center; horizontal-stretch: 1;
+                    Text { text: "MFA Manager"; font-size: 16px; font-weight: 700; color: Glacier.on-surface; }
+                    Text { text: "7 个账户"; font-size: 11px; color: Glacier.on-surface-v; }
+                }
+                Rectangle {
+                    width: 36px; height: 36px; border-radius: 18px;
+                    Text { text: "lock_outline"; font-family: "Material Icons Round"; font-size: 20px; color: Glacier.on-surface-v; horizontal-alignment: center; vertical-alignment: center; }
+                    TouchArea { clicked => { is-locked = true; } }
+                }
+                Rectangle {
+                    width: 36px; height: 36px; border-radius: 18px;
+                    Text { text: "more_vert"; font-family: "Material Icons Round"; font-size: 20px; color: Glacier.on-surface-v; horizontal-alignment: center; vertical-alignment: center; }
+                    TouchArea {}
+                }
+            }
+        }
+
+        // Search
+        VerticalLayout { padding-top: 10px; padding-left: 12px; padding-right: 12px; SearchBar {} }
+
+        // Card List
+        Flickable {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: 6px; padding-top: 8px; padding-bottom: 12px;
+
+                SectionHeader { title: "工作"; count: 4; dot-color: Glacier.cat-work; }
+                TotpCard { account: accounts[0]; is-revealed: revealed-id == 0; toggle-reveal => { revealed-id = revealed-id == 0 ? -1 : 0; } copy-otp => { snack-msg = "验证码已复制"; snack-show = true; } }
+                TotpCard { account: accounts[1]; is-revealed: revealed-id == 1; toggle-reveal => { revealed-id = revealed-id == 1 ? -1 : 1; } copy-otp => { snack-msg = "验证码已复制"; snack-show = true; } }
+                TotpCard { account: accounts[2]; is-revealed: revealed-id == 2; toggle-reveal => { revealed-id = revealed-id == 2 ? -1 : 2; } copy-otp => { snack-msg = "验证码已复制"; snack-show = true; } }
+                PasswordCard { account: accounts[6]; is-revealed: revealed-id == 6; toggle-reveal => { revealed-id = revealed-id == 6 ? -1 : 6; } copy-pw => { snack-msg = "密码已复制"; snack-show = true; } }
+
+                SectionHeader { title: "财务"; count: 1; dot-color: Glacier.cat-finance; }
+                TotpCard { account: accounts[3]; is-revealed: revealed-id == 3; toggle-reveal => { revealed-id = revealed-id == 3 ? -1 : 3; } copy-otp => { snack-msg = "验证码已复制"; snack-show = true; } }
+
+                SectionHeader { title: "个人"; count: 2; dot-color: Glacier.cat-personal; }
+                TotpCard { account: accounts[4]; is-revealed: revealed-id == 4; toggle-reveal => { revealed-id = revealed-id == 4 ? -1 : 4; } copy-otp => { snack-msg = "验证码已复制"; snack-show = true; } }
+                PasswordCard { account: accounts[5]; is-revealed: revealed-id == 5; toggle-reveal => { revealed-id = revealed-id == 5 ? -1 : 5; } copy-pw => { snack-msg = "密码已复制"; snack-show = true; } }
+            }
+        }
+
+        BottomNav { add-clicked => { snack-msg = "添加账户"; snack-show = true; } }
+    }
+
+    // Lock Screen overlay
+    if is-locked: LockScreen {
+        x: 0; y: 0; width: 100%; height: 100%;
+        pin-len: root.pin-len;
+        key-press(key) => {
+            if pin-len < 6 {
+                pin-str += key;
+                pin-len += 1;
+                if pin-len == 6 {
+                    if pin-str == "123456" {
+                        is-locked = false;
+                        pin-str = "";
+                        pin-len = 0;
+                        snack-msg = "已解锁";
+                        snack-show = true;
+                    } else {
+                        pin-str = "";
+                        pin-len = 0;
+                        snack-msg = "PIN 错误，请重试";
+                        snack-show = true;
+                    }
+                }
+            }
+        }
+        delete-press => {
+            if pin-len > 0 {
+                pin-len -= 1;
+                pin-str = "";
+            }
+        }
+        unlock-bio => {
+            is-locked = false;
+            pin-str = "";
+            pin-len = 0;
+            snack-msg = "已解锁";
+            snack-show = true;
+        }
+    }
+}
