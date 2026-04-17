@@ -94,207 +94,80 @@
    BASE
 ══════════════════════════════════════════ */
 body {
-  background:#13141A;
+  background:#1C1C20;
   font-family:'Inter',-apple-system,sans-serif;
   display:flex;align-items:center;justify-content:center;
   min-height:100vh;
 }
 .scene{display:flex;flex-direction:column;align-items:center;gap:16px;}
 
-/* ══════════════════════════════════════════
-   DESKTOP APP WINDOW
-══════════════════════════════════════════ */
 .app {
-  width:1100px;height:700px;
+  width:400px;height:720px;
   background:var(--surface);
-  border-radius:16px;overflow:hidden;
+  border-radius:24px;overflow:hidden;
   display:flex;flex-direction:column;
-  box-shadow:var(--shadow2),0 0 0 1px rgba(255,255,255,.05);
+  box-shadow:var(--shadow2),0 0 0 1px rgba(255,255,255,.04);
   position:relative;
   transition:background .3s,box-shadow .3s;
 }
 
-/* ── Title Bar ── */
-.titlebar {
-  height:46px;background:var(--surface2);
+/* ── Top Bar ── */
+.top-bar {
+  height:56px;background:var(--surface2);
   display:flex;align-items:center;
-  padding:0 14px;
-  flex-shrink:0;
-  border-bottom:1px solid var(--outline2);
-  position:relative;
+  padding:0 8px 0 12px;gap:4px;flex-shrink:0;
   transition:background .3s;
 }
-.traffic{display:flex;gap:6px;}
+.traffic{display:flex;gap:6px;margin-right:4px;}
 .traffic span{width:12px;height:12px;border-radius:50%;display:block;}
 .t-r{background:#FF5F57;}.t-y{background:#FEBC2E;}.t-g{background:#28C840;}
-.titlebar-title{
-  position:absolute;left:50%;transform:translateX(-50%);
-  font-size:13px;font-weight:600;color:var(--on-surface-v);
-  letter-spacing:.3px;pointer-events:none;
-  transition:color .3s;
-}
-.titlebar-right{margin-left:auto;display:flex;gap:2px;}
-
-/* ── App Body ── */
-.app-body{flex:1;display:flex;overflow:hidden;}
-
-/* ══════════════════════════════════════════
-   SIDEBAR
-══════════════════════════════════════════ */
-.sidebar {
-  width:220px;flex-shrink:0;
-  background:var(--surface2);
-  border-right:1px solid var(--outline2);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-  transition:background .3s;
-}
-
-/* Nav */
-.sidebar-nav{padding:8px 8px 4px;}
-.snav-item {
-  width:100%;height:34px;border-radius:8px;border:none;
-  background:transparent;color:var(--on-surface-v);
-  font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
-  display:flex;align-items:center;gap:10px;
-  padding:0 10px;cursor:pointer;
-  transition:background .15s,color .15s;
-  margin-bottom:2px;
-}
-.snav-item:hover{background:rgba(128,128,128,.1);color:var(--on-surface);}
-.snav-item.active{background:var(--primary-c);color:var(--on-primary-c);}
-.snav-item .material-icons-round{font-size:18px;}
-
-.sidebar-divider{height:1px;background:var(--outline2);margin:6px 10px;}
-
-/* Category filters */
-.sidebar-sec-label{
-  padding:6px 18px 4px;
-  font-size:10px;font-weight:700;letter-spacing:1.2px;
-  text-transform:uppercase;color:var(--on-surface-v);
-}
-.sidebar-cats{padding:0 8px;}
-.scat-item {
-  width:100%;height:32px;border-radius:8px;border:none;
-  background:transparent;color:var(--on-surface-v);
-  font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
-  display:flex;align-items:center;gap:8px;
-  padding:0 10px;cursor:pointer;
-  transition:background .15s,color .15s;
-  margin-bottom:2px;
-}
-.scat-item:hover{background:rgba(128,128,128,.1);color:var(--on-surface);}
-.scat-item.active{background:var(--primary-c);color:var(--on-primary-c);}
-.scat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.scat-name{flex:1;text-align:left;}
-.scat-count{
-  font-size:11px;font-weight:600;
-  background:rgba(128,128,128,.15);border-radius:10px;
-  padding:1px 7px;min-width:22px;text-align:center;
-  transition:background .3s;
-}
-.scat-item.active .scat-count{background:rgba(0,0,0,.15);}
-
-.sidebar-spacer{flex:1;}
-
-/* Stats + Add Button */
-.sidebar-stats{
-  padding:8px 18px 10px;
-  font-size:11px;color:var(--on-surface-v);
-  line-height:1.6;
-  transition:color .3s;
-}
-.sidebar-bottom{
-  padding:0 10px 14px;
-  border-top:1px solid var(--outline2);
-  padding-top:10px;
-}
-.sidebar-add-btn{
-  width:100%;height:38px;
-  background:var(--primary);color:var(--on-primary);border:none;
-  border-radius:10px;font-size:13px;font-weight:700;
-  font-family:'Inter',sans-serif;
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  cursor:pointer;transition:opacity .2s,background .3s,color .3s;
-}
-.sidebar-add-btn:hover{opacity:.88;}
-.sidebar-add-btn .material-icons-round{font-size:18px;}
-
-/* ══════════════════════════════════════════
-   MAIN CONTENT
-══════════════════════════════════════════ */
-.main-content{
-  flex:1;display:flex;flex-direction:column;overflow:hidden;
-  background:var(--bg);transition:background .3s;
-}
-
-/* ── Toolbar ── */
-.content-toolbar{
-  height:52px;
-  display:flex;align-items:center;gap:8px;
-  padding:0 16px;flex-shrink:0;
-  background:var(--surface);
-  border-bottom:1px solid var(--outline2);
-  transition:background .3s;
-}
-.content-title-group{flex:1;display:flex;align-items:baseline;gap:8px;}
-.content-title{font-size:16px;font-weight:700;color:var(--on-surface);transition:color .3s;}
-.content-sub{font-size:12px;color:var(--on-surface-v);transition:color .3s;}
-
-/* Toolbar search */
-.toolbar-search{
-  display:flex;align-items:center;gap:6px;
-  background:var(--surface3);border-radius:8px;
-  height:34px;padding:0 12px;width:230px;
-  border:1px solid var(--outline2);
-  transition:border-color .2s,background .3s;
-}
-.toolbar-search:focus-within{border-color:var(--primary);}
-.toolbar-search .material-icons-round{font-size:16px;color:var(--on-surface-v);flex-shrink:0;}
-.toolbar-search input{
-  flex:1;border:none;background:transparent;
-  font-size:13px;font-family:'Inter',sans-serif;
-  color:var(--on-surface);outline:none;
-}
-.toolbar-search input::placeholder{color:var(--on-surface-v);}
-
-/* Icon button (shared) */
+.bar-center{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;}
+.bar-title{font-size:16px;font-weight:700;color:var(--on-surface);letter-spacing:-.2px;transition:color .3s;}
+.bar-sub{font-size:11px;color:var(--on-surface-v);transition:color .3s;}
 .icon-btn{
-  width:34px;height:34px;border-radius:8px;border:none;
+  width:36px;height:36px;border-radius:50%;border:none;
   background:transparent;color:var(--on-surface-v);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  transition:background .2s,color .3s;flex-shrink:0;
+  transition:background .2s,color .3s;
 }
 .icon-btn:hover{background:rgba(128,128,128,.12);}
 .icon-btn .material-icons-round{font-size:20px;}
-.icon-btn.round{border-radius:50%;}
 
-/* ── Account List ── */
-.account-list{
-  flex:1;overflow-y:auto;padding:12px 16px 16px;
+/* ── Search ── */
+.search-wrap{padding:10px 12px 0;flex-shrink:0;}
+.search-bar{
+  display:flex;align-items:center;
+  background:var(--surface3);border-radius:24px;height:42px;
+  padding:0 14px;gap:6px;border:1px solid var(--outline2);
+  transition:background .3s,border-color .2s;
+}
+.search-bar:focus-within{border-color:var(--primary);}
+.search-bar .material-icons-round{font-size:18px;color:var(--on-surface-v);flex-shrink:0;}
+.search-input{
+  flex:1;border:none;background:transparent;
+  font-size:14px;font-family:'Inter',sans-serif;
+  color:var(--on-surface);outline:none;
+}
+.search-input::placeholder{color:var(--on-surface-v);}
+
+/* ── List ── */
+.list{
+  flex:1;overflow-y:auto;padding:8px 0 12px;
   scrollbar-width:thin;scrollbar-color:var(--outline) transparent;
 }
-.account-list::-webkit-scrollbar{width:4px;}
-.account-list::-webkit-scrollbar-thumb{background:var(--outline);border-radius:4px;}
+.list::-webkit-scrollbar{width:3px;}
+.list::-webkit-scrollbar-thumb{background:var(--outline);border-radius:3px;}
 
 /* Section header */
-.sec-hd{display:flex;align-items:center;padding:10px 4px 6px;gap:8px;}
+.sec-hd{display:flex;align-items:center;padding:10px 16px 4px;gap:8px;}
 .sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .sec-label{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--on-surface-v);}
 .sec-line{flex:1;height:1px;background:var(--outline2);}
 .sec-count{font-size:10px;color:var(--on-surface-v);font-weight:600;}
 
-/* Cards grid */
-.cards-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:8px;
-  margin-bottom:4px;
-}
-
 /* ── Card ── */
 .card{
-  margin:0;
+  margin:3px 12px;
   background:var(--card);border:1px solid var(--outline2);
   border-radius:14px;cursor:pointer;
   position:relative;overflow:visible;
@@ -330,7 +203,7 @@ body {
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .3s;
 }
 
-/* Context menu button */
+/* ── Context menu button ── */
 .menu-btn{
   width:32px;height:32px;border-radius:50%;border:none;background:transparent;
   color:var(--on-surface-v);cursor:pointer;
@@ -340,7 +213,7 @@ body {
 .menu-btn:hover{background:rgba(128,128,128,.12);}
 .menu-btn .material-icons-round{font-size:18px;}
 
-/* Context Menu Dropdown */
+/* ── Context Menu Dropdown ── */
 .ctx-menu{
   position:absolute;right:12px;top:44px;
   background:var(--surface2);border:1px solid var(--outline2);
@@ -368,16 +241,21 @@ body {
 /* ── OTP row ── */
 .card-r2{display:flex;align-items:center;gap:8px;}
 
+/* masked / revealed */
 .otp{
   font-family:'Roboto Mono',monospace;
   font-size:26px;font-weight:500;letter-spacing:5px;
   color:var(--primary);flex:1;
   transition:color .3s;user-select:none;
 }
-.otp.masked{letter-spacing:4px;color:var(--on-surface-v) !important;}
+.otp.masked{
+  letter-spacing:4px;
+  color:var(--on-surface-v) !important;
+}
 .otp.warn  {color:var(--warn);}
 .otp.danger{color:var(--danger);}
 
+/* reveal hint */
 .reveal-hint{
   font-size:10px;font-weight:600;color:var(--on-surface-v);
   opacity:0;transition:opacity .2s;white-space:nowrap;
@@ -387,6 +265,7 @@ body {
 .card:hover .reveal-hint{opacity:1;}
 .card.revealed .reveal-hint{display:none;}
 
+/* copy chip */
 .copy-chip{
   display:flex;align-items:center;gap:3px;
   height:28px;padding:0 12px 0 8px;border-radius:8px;
@@ -411,7 +290,7 @@ body {
   font-size:10px;font-weight:700;font-family:'Roboto Mono',monospace;
 }
 
-/* Card Row 3 */
+/* ── Card Row 3: username + password (TOTP cards) ── */
 .card-r3{
   display:flex;align-items:center;gap:8px;
   margin-top:8px;padding-top:8px;
@@ -419,16 +298,22 @@ body {
   max-height:0;opacity:0;overflow:hidden;
   transition:max-height .25s ease,opacity .2s,margin-top .2s,padding-top .2s;
 }
-.card.revealed .card-r3{max-height:60px;opacity:1;}
+.card.revealed .card-r3{
+  max-height:60px;opacity:1;
+  margin-top:8px;padding-top:8px;
+}
 .card-r3 .cred-label{
   font-size:10px;font-weight:600;color:var(--on-surface-v);
   flex-shrink:0;min-width:32px;text-align:right;
 }
 .card-r3 .cred-val{
   font-size:13px;color:var(--on-surface);font-family:'Roboto Mono',monospace;
-  flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.card-r3 .cred-val.masked-pw{color:var(--on-surface-v);letter-spacing:2px;}
+.card-r3 .cred-val.masked-pw{
+  color:var(--on-surface-v);letter-spacing:2px;
+}
 .pw-toggle{
   width:26px;height:26px;border-radius:50%;border:none;
   background:transparent;color:var(--on-surface-v);cursor:pointer;
@@ -438,38 +323,75 @@ body {
 .pw-toggle:hover{background:rgba(128,128,128,.12);}
 .pw-toggle .material-icons-round{font-size:16px;}
 
-/* Password-type card */
-.card-r2-pw{display:flex;align-items:center;gap:8px;}
+/* ── Password-type card row 2 ── */
+.card-r2-pw{
+  display:flex;align-items:center;gap:8px;
+}
 .pw-display{
   font-family:'Roboto Mono',monospace;
   font-size:18px;font-weight:500;letter-spacing:4px;
   color:var(--on-surface-v);flex:1;
   transition:color .3s;user-select:none;
 }
-.pw-display.revealed-pw{letter-spacing:1.5px;color:var(--on-surface);}
+.pw-display.revealed-pw{
+  letter-spacing:1.5px;color:var(--on-surface);
+}
 
-/* ══════════════════════════════════════════
-   MODAL SHEET (desktop centered dialog)
-══════════════════════════════════════════ */
+/* ── Bottom Nav (FAB integrated) ── */
+.bot-nav{
+  height:68px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:space-around;
+  flex-shrink:0;padding:0 4px;transition:background .3s;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;border:none;background:transparent;
+  flex:1;padding:4px 0;border-radius:12px;
+  transition:background .2s;
+}
+.nav-item:hover{background:rgba(128,128,128,.08);}
+.nav-pill{
+  width:56px;height:28px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+}
+.nav-item.act .nav-pill{background:var(--primary-c);}
+.nav-item .material-icons-round{font-size:22px;color:var(--on-surface-v);transition:color .3s;}
+.nav-item.act .material-icons-round{color:var(--on-primary-c);}
+.nav-label{font-size:10px;font-weight:600;color:var(--on-surface-v);transition:color .3s;}
+.nav-item.act .nav-label{color:var(--on-primary-c);}
+
+/* FAB in nav */
+.nav-fab{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--primary);border:none;
+  color:var(--on-primary);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);
+  cursor:pointer;transition:all .22s;flex-shrink:0;
+  margin-bottom:6px;
+}
+.nav-fab:hover{transform:scale(1.06);box-shadow:0 6px 18px rgba(0,0,0,.4);}
+.nav-fab:active{transform:scale(.96);}
+.nav-fab .material-icons-round{font-size:22px;}
+
+/* ── Bottom Sheet ── */
 .scrim{
   position:absolute;inset:0;background:rgba(0,0,0,0);
-  z-index:50;display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .25s,background .25s;
+  z-index:50;display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;transition:opacity .3s,background .3s;
 }
-.scrim.open{opacity:1;pointer-events:all;background:rgba(0,0,0,.5);}
+.scrim.open{opacity:1;pointer-events:all;background:rgba(0,0,0,.4);}
 .sheet{
-  width:520px;max-height:88%;
-  background:var(--surface);
-  border-radius:20px;
-  overflow-y:auto;
-  transform:scale(0.94) translateY(10px);
-  transition:transform .25s cubic-bezier(.2,0,0,1),background .3s;
-  scrollbar-width:thin;scrollbar-color:var(--outline) transparent;
+  width:100%;background:var(--surface);
+  border-radius:24px 24px 0 0;padding-bottom:28px;
+  transform:translateY(110%);
+  transition:transform .32s cubic-bezier(.2,0,0,1),background .3s;
 }
-.scrim.open .sheet{transform:scale(1) translateY(0);}
-.drag-handle{display:none;}
-.sheet-top{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px;}
-.sheet-title{font-size:20px;font-weight:700;color:var(--on-surface);transition:color .3s;}
+.scrim.open .sheet{transform:translateY(0);}
+.sheet-top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;}
+.drag-handle{width:32px;height:4px;background:var(--outline);border-radius:2px;margin:12px auto 0;}
+.sheet-title{font-size:20px;font-weight:700;color:var(--on-surface);}
 .sheet-close{
   width:32px;height:32px;border-radius:50%;border:none;
   background:var(--surface3);color:var(--on-surface-v);cursor:pointer;
@@ -479,7 +401,7 @@ body {
 .sheet-close .material-icons-round{font-size:18px;}
 
 .scan-zone{
-  margin:0 22px 14px;height:100px;border-radius:14px;
+  margin:0 20px 12px;height:110px;border-radius:14px;
   background:var(--surface3);border:1.5px dashed var(--outline);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   cursor:pointer;overflow:hidden;position:relative;
@@ -494,13 +416,14 @@ body {
 
 .divider-row{
   display:flex;align-items:center;gap:10px;
-  padding:2px 22px 10px;
+  padding:2px 20px 10px;
   font-size:11px;font-weight:600;color:var(--on-surface-v);
 }
 .divider-row::before,.divider-row::after{content:'';flex:1;height:1px;background:var(--outline2);}
 
-.form{padding:0 22px 22px;display:flex;flex-direction:column;gap:12px;}
+.form{padding:0 20px;display:flex;flex-direction:column;gap:10px;}
 
+/* icon picker row */
 .icon-picker-row{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 2px;}
 .icon-opt{
   width:36px;height:36px;border-radius:10px;
@@ -532,12 +455,14 @@ body {
 .row2 .field{flex:1;}
 .form-label{font-size:11px;font-weight:700;color:var(--on-surface-v);letter-spacing:.5px;text-transform:uppercase;}
 
+/* password input with toggle */
 .field-pw{position:relative;}
 .field-pw input{
   width:100%;height:48px;border:1.5px solid var(--outline);border-radius:10px;
   background:transparent;padding:0 70px 0 14px;
   font-size:14px;font-family:'Roboto Mono',monospace;
-  color:var(--on-surface);outline:none;transition:border-color .2s;letter-spacing:1px;
+  color:var(--on-surface);outline:none;transition:border-color .2s;
+  letter-spacing:1px;
 }
 .field-pw input:focus{border-color:var(--primary);}
 .field-pw label{
@@ -550,16 +475,19 @@ body {
   top:0;font-size:11px;font-weight:600;background:var(--surface);color:var(--primary);
 }
 .pw-actions{
-  position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;gap:2px;
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:flex;gap:2px;
 }
 .pw-act{
   width:32px;height:32px;border-radius:50%;border:none;
   background:transparent;color:var(--on-surface-v);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:background .15s;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
 }
 .pw-act:hover{background:rgba(128,128,128,.12);}
 .pw-act .material-icons-round{font-size:18px;}
 
+/* type toggle (segment control) */
 .type-toggle{
   display:flex;background:var(--surface3);border-radius:10px;
   padding:3px;border:1px solid var(--outline2);
@@ -571,9 +499,13 @@ body {
   cursor:pointer;transition:all .2s;
   display:flex;align-items:center;justify-content:center;gap:6px;
 }
-.type-btn.active{background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow);}
+.type-btn.active{
+  background:var(--primary);color:var(--on-primary);
+  box-shadow:var(--shadow);
+}
 .type-btn .material-icons-round{font-size:16px;}
 
+/* conditional fields */
 .form-totp-only{display:flex;flex-direction:column;gap:10px;}
 .form-totp-only.hidden{display:none;}
 
@@ -586,9 +518,7 @@ body {
 .btn-fill:hover{opacity:.9;}
 .btn-fill .material-icons-round{font-size:18px;}
 
-/* ══════════════════════════════════════════
-   LOCK SCREEN
-══════════════════════════════════════════ */
+/* ── Lock Screen ── */
 .lock-ov{
   position:absolute;inset:0;background:var(--surface);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -601,14 +531,19 @@ body {
   transition:background .3s;
 }
 .lock-logo .material-icons-round{font-size:36px;color:var(--on-primary-c);}
-.lock-h{font-size:24px;font-weight:700;color:var(--on-surface);margin-bottom:4px;transition:color .3s;}
-.lock-sub{font-size:13px;color:var(--on-surface-v);margin-bottom:28px;transition:color .3s;}
+.lock-h{font-size:24px;font-weight:700;color:var(--on-surface);margin-bottom:4px;}
+.lock-sub{font-size:13px;color:var(--on-surface-v);margin-bottom:28px;}
 
+/* PIN dots */
 .pin-dots{display:flex;gap:12px;margin-bottom:22px;}
-.pin-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--outline);transition:all .15s;}
+.pin-dot{
+  width:12px;height:12px;border-radius:50%;
+  border:2px solid var(--outline);transition:all .15s;
+}
 .pin-dot.on{background:var(--primary);border-color:var(--primary);transform:scale(1.2);}
 .pin-dot.err{background:var(--danger);border-color:var(--danger);animation:shake .4s ease;}
 
+/* Keypad */
 .keypad{display:grid;grid-template-columns:repeat(3,68px);gap:8px;}
 .key{
   width:68px;height:68px;border-radius:50%;border:none;
@@ -624,35 +559,32 @@ body {
 .key.ghost:hover{background:var(--surface3);}
 .key .material-icons-round{font-size:22px;color:var(--on-surface-v);}
 .key-sub{font-size:8px;letter-spacing:1px;color:var(--on-surface-v);line-height:1;}
-.lock-err-msg{font-size:12px;color:var(--danger);margin-top:12px;height:16px;transition:opacity .2s;opacity:0;}
+.lock-err-msg{
+  font-size:12px;color:var(--danger);margin-top:12px;height:16px;
+  transition:opacity .2s;opacity:0;
+}
 .lock-err-msg.show{opacity:1;}
 
-/* ══════════════════════════════════════════
-   SNACKBAR
-══════════════════════════════════════════ */
+/* ── Snackbar ── */
 .snack{
-  position:absolute;bottom:20px;left:50%;
-  transform:translateX(-50%) translateY(10px);
+  position:absolute;bottom:76px;left:12px;right:12px;
   background:#2A2A2F;color:#ECE6F0;border-radius:10px;
-  padding:12px 18px;font-size:13px;font-weight:500;
-  display:flex;align-items:center;white-space:nowrap;
+  padding:12px 16px;font-size:13px;font-weight:500;
+  display:flex;align-items:center;justify-content:space-between;
   box-shadow:0 4px 20px rgba(0,0,0,.4);
-  opacity:0;
+  opacity:0;transform:translateY(6px);
   transition:opacity .22s,transform .22s;
   pointer-events:none;z-index:999;
 }
-.snack.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all;}
+.snack.show{opacity:1;transform:translateY(0);pointer-events:all;}
 .snack-act{
   font-weight:700;font-size:12px;color:#C2D8FF;cursor:pointer;
-  background:none;border:none;font-family:'Inter',sans-serif;margin-left:14px;
+  background:none;border:none;font-family:'Inter',sans-serif;margin-left:12px;
 }
 
-/* ══════════════════════════════════════════
-   THEME SWITCHER
-══════════════════════════════════════════ */
+/* ── Theme Switcher ── */
 .theme-switcher{
-  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-  justify-content:center;max-width:1100px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:420px;
 }
 .theme-label{
   width:100%;text-align:center;
@@ -665,68 +597,90 @@ body {
 }
 .th-btn:hover{transform:scale(1.1);}
 .th-btn.active .th-swatch{outline:3px solid #fff;outline-offset:2px;}
-.th-swatch{width:36px;height:36px;border-radius:10px;display:flex;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.35);}
+.th-swatch{
+  width:36px;height:36px;border-radius:10px;display:flex;overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.35);
+}
 .th-half{flex:1;}
 .th-name{font-size:9px;font-weight:700;letter-spacing:.5px;color:#666;text-transform:uppercase;}
 .th-btn.active .th-name{color:#ddd;}
 
-/* ══════════════════════════════════════════
-   PAGE SYSTEM (desktop)
-══════════════════════════════════════════ */
-.d-page{display:none;flex:1;overflow-y:auto;flex-direction:column;
-  scrollbar-width:thin;scrollbar-color:var(--outline) transparent;
-  background:var(--bg);transition:background .3s;}
-.d-page::-webkit-scrollbar{width:4px;}
-.d-page::-webkit-scrollbar-thumb{background:var(--outline);border-radius:4px;}
-.d-page.active{display:flex;}
+/* ── Ripple ── */
+.rip{position:absolute;border-radius:50%;background:rgba(128,128,128,.15);transform:scale(0);animation:rip .4s linear;pointer-events:none;}
+@keyframes rip{to{transform:scale(4);opacity:0;}}
+
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 
 /* ══════════════════════════════════════════
-   SETTINGS COMPONENTS (desktop)
+   PAGE SYSTEM
 ══════════════════════════════════════════ */
-.settings-wrap{padding:20px 24px 32px;display:flex;flex-direction:column;gap:20px;}
-.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
-.settings-card{
-  background:var(--card);border:1px solid var(--outline2);
-  border-radius:16px;overflow:hidden;transition:background .3s;
+.pages-wrap{flex:1;display:flex;overflow:hidden;flex-direction:column;}
+.page{display:none;flex:1;overflow-y:auto;flex-direction:column;
+  scrollbar-width:thin;scrollbar-color:var(--outline) transparent;}
+.page.active{display:flex;}
+
+/* ── Page Header ── */
+.page-hd{
+  padding:14px 16px 10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
 }
-.settings-card-hd{
-  padding:14px 18px 10px;
+.page-hd-title{font-size:18px;font-weight:700;color:var(--on-surface);transition:color .3s;}
+.page-hd-action{
+  height:32px;padding:0 14px;border-radius:16px;border:none;
+  background:var(--primary);color:var(--on-primary);
+  font-size:12px;font-weight:700;font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:5px;cursor:pointer;transition:opacity .2s,background .3s;
+}
+.page-hd-action:hover{opacity:.88;}
+.page-hd-action .material-icons-round{font-size:15px;}
+
+/* ══════════════════════════════════════════
+   SETTINGS COMPONENTS
+══════════════════════════════════════════ */
+.settings-body{padding:8px 0 32px;flex:1;}
+.settings-section{margin:0 12px 16px;}
+.settings-sec-hd{
   font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
-  color:var(--on-surface-v);border-bottom:1px solid var(--outline2);
-  transition:color .3s;
+  color:var(--on-surface-v);padding:0 4px 6px;transition:color .3s;
 }
-.s-item{
-  display:flex;align-items:center;gap:12px;padding:12px 18px;
+.settings-list{
+  background:var(--card);border:1px solid var(--outline2);
+  border-radius:14px;overflow:hidden;transition:background .3s;
+}
+.settings-item{
+  display:flex;align-items:center;gap:12px;padding:13px 14px;
   border-bottom:1px solid var(--outline2);
-  transition:background .15s;cursor:pointer;
+  cursor:pointer;transition:background .15s;
 }
-.s-item:last-child{border-bottom:none;}
-.s-item:hover{background:var(--card-hover);}
-.s-item.no-tap{cursor:default;}
-.s-item.no-tap:hover{background:transparent;}
+.settings-item:last-child{border-bottom:none;}
+.settings-item:hover{background:var(--card-hover);}
+.settings-item.no-tap{cursor:default;}
+.settings-item.no-tap:hover{background:transparent;}
 .s-icon{
-  width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  width:32px;height:32px;border-radius:9px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
 }
-.s-icon .material-icons-round{font-size:16px;color:#fff;}
+.s-icon .material-icons-round{font-size:18px;color:#fff;}
 .s-body{flex:1;min-width:0;}
-.s-label{font-size:13px;font-weight:500;color:var(--on-surface);transition:color .3s;}
+.s-label{font-size:14px;font-weight:500;color:var(--on-surface);transition:color .3s;}
 .s-sub{font-size:11px;color:var(--on-surface-v);margin-top:1px;transition:color .3s;}
 .s-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.s-val{font-size:12px;color:var(--on-surface-v);}
-.s-chevron{font-size:16px;color:var(--on-surface-v);}
-.s-item.danger .s-label{color:var(--danger);}
+.s-val{font-size:13px;color:var(--on-surface-v);transition:color .3s;}
+.s-chevron{font-size:18px;color:var(--on-surface-v);}
+.settings-item.danger .s-label{color:var(--danger);}
 
 /* Toggle switch */
 .toggle-sw{
-  width:40px;height:22px;border-radius:11px;
+  width:44px;height:26px;border-radius:13px;
   background:var(--outline);border:none;cursor:pointer;
   position:relative;transition:background .25s;flex-shrink:0;
 }
 .toggle-sw.on{background:var(--primary);}
 .toggle-sw::after{
   content:'';position:absolute;
-  width:16px;height:16px;border-radius:50%;
+  width:20px;height:20px;border-radius:50%;
   background:#fff;top:3px;left:3px;
   transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.25);
 }
@@ -734,353 +688,347 @@ body {
 
 /* Settings select */
 .s-select{
-  height:28px;padding:0 20px 0 8px;border-radius:7px;
+  height:30px;padding:0 22px 0 8px;border-radius:8px;
   border:1px solid var(--outline2);background:var(--surface3);
   color:var(--on-surface);font-size:12px;font-family:'Inter',sans-serif;
   outline:none;cursor:pointer;transition:border-color .2s,background .3s;
   -webkit-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 4px center;
+  background-repeat:no-repeat;background-position:right 5px center;
 }
 
-/* Group cards (desktop) */
-.d-group-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:12px;padding:20px 24px 32px;
-}
-.d-group-card{
+/* ── Group Cards ── */
+.group-cards{padding:4px 12px 24px;display:flex;flex-direction:column;gap:8px;}
+.group-card{
   background:var(--card);border:1px solid var(--outline2);
-  border-radius:16px;padding:20px;
-  transition:background .2s,box-shadow .2s,transform .15s;
-  animation:fadeUp .25s ease both;cursor:default;
+  border-radius:14px;padding:14px 12px 14px 16px;
+  display:flex;align-items:center;gap:12px;
+  transition:background .2s;animation:fadeUp .25s ease both;
 }
-.d-group-card:hover{background:var(--card-hover);box-shadow:var(--shadow);transform:translateY(-1px);}
-.d-group-card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
-.d-group-icon{
-  width:42px;height:42px;border-radius:12px;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.d-group-icon .material-icons-round{font-size:22px;color:#fff;}
-.d-group-name{font-size:16px;font-weight:700;color:var(--on-surface);transition:color .3s;}
-.d-group-desc{font-size:11px;color:var(--on-surface-v);margin-top:2px;transition:color .3s;}
-.d-group-stats{
-  display:flex;gap:6px;flex-wrap:wrap;
-  border-top:1px solid var(--outline2);padding-top:12px;margin-top:4px;
-}
-.d-group-stat{
-  background:var(--surface3);border-radius:8px;
-  font-size:11px;font-weight:600;color:var(--on-surface-v);
+.group-card:hover{background:var(--card-hover);}
+.group-card-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.group-card-info{flex:1;min-width:0;}
+.group-card-name{font-size:15px;font-weight:600;color:var(--on-surface);transition:color .3s;}
+.group-card-meta{font-size:12px;color:var(--on-surface-v);margin-top:2px;transition:color .3s;}
+.group-card-badge{
+  background:var(--surface3);border-radius:10px;
+  font-size:12px;font-weight:600;color:var(--on-surface-v);
   padding:3px 10px;transition:background .3s;
 }
-.d-group-actions{margin-top:12px;display:flex;gap:6px;}
-.d-group-btn{
-  flex:1;height:30px;border:none;border-radius:8px;
-  background:var(--surface3);color:var(--on-surface-v);
-  font-size:11px;font-weight:600;font-family:'Inter',sans-serif;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;
-  transition:background .15s,color .15s;
-}
-.d-group-btn:hover{background:var(--primary-c);color:var(--on-primary-c);}
-.d-group-btn .material-icons-round{font-size:14px;}
+.group-card-actions{display:flex;gap:2px;}
+.group-card-actions .icon-btn{width:32px;height:32px;}
 
-/* Import zone (desktop) */
-.d-import-zone{
-  margin:0 24px 16px;height:90px;border-radius:14px;
+/* ── Import Preview (KeePass) ── */
+.import-zone{
+  margin:0 12px 16px;height:100px;border-radius:14px;
   background:var(--surface3);border:1.5px dashed var(--outline);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   cursor:pointer;transition:border-color .2s,background .3s;
 }
-.d-import-zone:hover{border-color:var(--primary);}
-.d-import-zone .material-icons-round{font-size:24px;color:var(--primary);}
-.d-import-zone-t{font-size:13px;font-weight:600;color:var(--on-surface);}
-.d-import-zone-s{font-size:11px;color:var(--on-surface-v);}
-
-/* ══════════════════════════════════════════
-   ANIMATIONS
-══════════════════════════════════════════ */
-.rip{position:absolute;border-radius:50%;background:rgba(128,128,128,.15);transform:scale(0);animation:rip .4s linear;pointer-events:none;}
-@keyframes rip{to{transform:scale(4);opacity:0;}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.import-zone:hover{border-color:var(--primary);}
+.import-zone .material-icons-round{font-size:28px;color:var(--primary);}
+.import-zone-t{font-size:13px;font-weight:600;color:var(--on-surface);}
+.import-zone-s{font-size:11px;color:var(--on-surface-v);}
 </style>
 </head>
 <body>
 <div class="scene">
 
-<!-- ══ Desktop App Window ══ -->
+<!-- ══ App Window ══ -->
 <div class="app" id="app" data-theme="c">
 
-  <!-- ── Title Bar ── -->
-  <div class="titlebar">
+  <!-- Top Bar: title + account count -->
+  <div class="top-bar">
     <div class="traffic">
       <span class="t-r"></span><span class="t-y"></span><span class="t-g"></span>
     </div>
-    <span class="titlebar-title">MFA Manager</span>
-    <div class="titlebar-right">
-      <button class="icon-btn round" onclick="goMobileView()" title="切换到手机版">
-        <span class="material-icons-round">phone_iphone</span>
-      </button>
-      <button class="icon-btn round" onclick="showLock()" title="锁定">
-        <span class="material-icons-round">lock_outline</span>
-      </button>
-      <button class="icon-btn round" title="更多">
-        <span class="material-icons-round">more_vert</span>
-      </button>
+    <div class="bar-center">
+      <span class="bar-title">MFA Manager</span>
+      <span class="bar-sub" id="acct-count"></span>
     </div>
+    <button class="icon-btn" onclick="goDesktopView()" title="切换到桌面版">
+      <span class="material-icons-round">desktop_windows</span>
+    </button>
+    <button class="icon-btn" onclick="showLock()" title="锁定">
+      <span class="material-icons-round">lock_outline</span>
+    </button>
+    <button class="icon-btn" title="更多">
+      <span class="material-icons-round">more_vert</span>
+    </button>
   </div>
 
-  <!-- ── App Body ── -->
-  <div class="app-body">
+  <!-- ══ Pages Wrapper ══ -->
+  <div class="pages-wrap">
 
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar">
-
-      <!-- Navigation -->
-      <div class="sidebar-nav">
-        <button class="snav-item active" data-page="accounts" onclick="switchNav(this)">
-          <span class="material-icons-round">key</span>账户
-        </button>
-        <button class="snav-item" data-page="groups" onclick="switchNav(this)">
-          <span class="material-icons-round">folder_open</span>分组
-        </button>
-        <button class="snav-item" data-page="security" onclick="switchNav(this)">
-          <span class="material-icons-round">shield</span>安全
-        </button>
-        <button class="snav-item" data-page="settings" onclick="switchNav(this)">
-          <span class="material-icons-round">settings</span>设置
-        </button>
-      </div>
-
-      <div class="sidebar-divider"></div>
-
-      <!-- Category Filters -->
-      <div class="sidebar-sec-label">分类</div>
-      <div class="sidebar-cats">
-        <button class="scat-item active" data-cat="all" onclick="filterCat(null)">
-          <span class="material-icons-round" style="font-size:14px;color:inherit;">apps</span>
-          <span class="scat-name">全部账户</span>
-          <span class="scat-count" id="scat-count-all">7</span>
-        </button>
-        <button class="scat-item" data-cat="work" onclick="filterCat('work')">
-          <div class="scat-dot" style="background:var(--cat-work)"></div>
-          <span class="scat-name">工作</span>
-          <span class="scat-count" id="scat-count-work">3</span>
-        </button>
-        <button class="scat-item" data-cat="finance" onclick="filterCat('finance')">
-          <div class="scat-dot" style="background:var(--cat-finance)"></div>
-          <span class="scat-name">财务</span>
-          <span class="scat-count" id="scat-count-finance">1</span>
-        </button>
-        <button class="scat-item" data-cat="personal" onclick="filterCat('personal')">
-          <div class="scat-dot" style="background:var(--cat-personal)"></div>
-          <span class="scat-name">个人</span>
-          <span class="scat-count" id="scat-count-personal">3</span>
-        </button>
-      </div>
-
-      <div class="sidebar-spacer"></div>
-
-      <!-- Stats -->
-      <div class="sidebar-stats" id="sidebar-stats"></div>
-
-      <!-- Add Button -->
-      <div class="sidebar-bottom">
-        <button class="sidebar-add-btn" onclick="openSheet()">
-          <span class="material-icons-round">add</span>添加账户
-        </button>
-      </div>
-
-    </aside>
-
-    <!-- ── Main Content ── -->
-    <main class="main-content">
-
-      <!-- Toolbar -->
-      <div class="content-toolbar">
-        <div class="content-title-group">
-          <span class="content-title" id="content-title">所有账户</span>
-          <span class="content-sub" id="acct-count"></span>
-        </div>
-        <div class="toolbar-search">
+    <!-- ── Page: Accounts ── -->
+    <div class="page active" id="page-accounts">
+      <div class="search-wrap">
+        <div class="search-bar">
           <span class="material-icons-round">search</span>
-          <input placeholder="搜索账户…" oninput="filterCards(this.value)"/>
+          <input class="search-input" placeholder="搜索账户…" oninput="filterCards(this.value)"/>
         </div>
-        <button class="icon-btn toolbar-ctrl" title="视图切换" onclick="toggleView(this)">
-          <span class="material-icons-round" id="view-icon">grid_view</span>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+
+    <!-- ── Page: Groups ── -->
+    <div class="page" id="page-groups">
+      <div class="page-hd">
+        <span class="page-hd-title">分组管理</span>
+        <button class="page-hd-action" onclick="addGroup()">
+          <span class="material-icons-round">add</span>新建分组
         </button>
-        <button class="icon-btn toolbar-ctrl" title="排序">
-          <span class="material-icons-round">sort</span>
-        </button>
       </div>
+      <div class="group-cards" id="group-cards-list"></div>
+    </div>
 
-      <!-- ── Page: Accounts ── -->
-      <div class="d-page active" id="d-page-accounts">
-        <div class="account-list" id="list"></div>
-      </div>
+    <!-- ── Page: Security ── -->
+    <div class="page" id="page-security">
+      <div class="settings-body">
 
-      <!-- ── Page: Groups ── -->
-      <div class="d-page" id="d-page-groups">
-        <div class="d-group-grid" id="d-group-grid"></div>
-      </div>
-
-      <!-- ── Page: Security ── -->
-      <div class="d-page" id="d-page-security">
-        <div class="settings-wrap">
-          <div class="settings-row">
-            <!-- 解锁与认证 -->
-            <div class="settings-card">
-              <div class="settings-card-hd">解锁与认证</div>
-              <div class="s-item" onclick="showSnack('PIN 修改功能即将上线')">
-                <div class="s-icon" style="background:#5E6AD2"><span class="material-icons-round">pin</span></div>
-                <div class="s-body"><div class="s-label">修改 PIN 码</div><div class="s-sub">当前已设置 6 位 PIN</div></div>
-                <div class="s-ctrl"><span class="material-icons-round s-chevron">chevron_right</span></div>
+        <div class="settings-section">
+          <div class="settings-sec-hd">解锁与认证</div>
+          <div class="settings-list">
+            <div class="settings-item" onclick="showSnack('PIN 修改功能即将上线')">
+              <div class="s-icon" style="background:#5E6AD2"><span class="material-icons-round">pin</span></div>
+              <div class="s-body">
+                <div class="s-label">修改 PIN 码</div>
+                <div class="s-sub">当前已设置 6 位 PIN</div>
               </div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#34C759"><span class="material-icons-round">fingerprint</span></div>
-                <div class="s-body"><div class="s-label">生物认证</div><div class="s-sub">使用指纹或面容解锁</div></div>
-                <div class="s-ctrl"><button class="toggle-sw" id="d-tog-bio" onclick="dToggle('bio')"></button></div>
+              <div class="s-ctrl"><span class="material-icons-round s-chevron">chevron_right</span></div>
+            </div>
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#34C759"><span class="material-icons-round">fingerprint</span></div>
+              <div class="s-body">
+                <div class="s-label">生物认证</div>
+                <div class="s-sub">使用指纹或面容解锁</div>
               </div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#FF9500"><span class="material-icons-round">lock_clock</span></div>
-                <div class="s-body"><div class="s-label">自动锁屏</div><div class="s-sub">无操作后自动锁定</div></div>
-                <div class="s-ctrl">
-                  <select class="s-select" id="d-sel-autolock" onchange="dSave('autolock',this.value)">
-                    <option value="0">立即</option><option value="60">1 分钟</option>
-                    <option value="300" selected>5 分钟</option><option value="600">10 分钟</option>
-                    <option value="1800">30 分钟</option><option value="-1">永不</option>
-                  </select>
-                </div>
+              <div class="s-ctrl">
+                <button class="toggle-sw" id="tog-bio" onclick="toggleSetting('bio')"></button>
               </div>
             </div>
-            <!-- 剪贴板安全 -->
-            <div class="settings-card">
-              <div class="settings-card-hd">剪贴板安全</div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#007AFF"><span class="material-icons-round">content_paste</span></div>
-                <div class="s-body"><div class="s-label">验证码自动清空</div><div class="s-sub">复制验证码后清空剪贴板</div></div>
-                <div class="s-ctrl">
-                  <select class="s-select" id="d-sel-otp-clip" onchange="dSave('otpClip',this.value)">
-                    <option value="10">10 秒</option><option value="15">15 秒</option>
-                    <option value="25" selected>25 秒</option><option value="30">30 秒</option>
-                    <option value="60">60 秒</option><option value="-1">永不</option>
-                  </select>
-                </div>
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#FF9500"><span class="material-icons-round">lock_clock</span></div>
+              <div class="s-body">
+                <div class="s-label">自动锁屏</div>
+                <div class="s-sub">无操作后自动锁定</div>
               </div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#5856D6"><span class="material-icons-round">password</span></div>
-                <div class="s-body"><div class="s-label">密码自动清空</div><div class="s-sub">复制密码后清空剪贴板</div></div>
-                <div class="s-ctrl">
-                  <select class="s-select" id="d-sel-pw-clip" onchange="dSave('pwClip',this.value)">
-                    <option value="10">10 秒</option><option value="15" selected>15 秒</option>
-                    <option value="30">30 秒</option><option value="60">60 秒</option>
-                    <option value="120">2 分钟</option><option value="-1">永不</option>
-                  </select>
-                </div>
-              </div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#FF3B30"><span class="material-icons-round">phonelink_erase</span></div>
-                <div class="s-body"><div class="s-label">锁屏时立即清空</div><div class="s-sub">锁定应用时清空剪贴板</div></div>
-                <div class="s-ctrl"><button class="toggle-sw on" id="d-tog-lock-clip" onclick="dToggle('lockClip')"></button></div>
-              </div>
-            </div>
-          </div>
-          <div class="settings-row">
-            <!-- 显示安全 -->
-            <div class="settings-card">
-              <div class="settings-card-hd">显示安全</div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#30B0C7"><span class="material-icons-round">visibility_off</span></div>
-                <div class="s-body"><div class="s-label">验证码自动回遮</div><div class="s-sub">显示验证码后自动遮蔽</div></div>
-                <div class="s-ctrl">
-                  <select class="s-select" id="d-sel-otp-mask" onchange="dSave('otpMask',this.value)">
-                    <option value="5">5 秒</option><option value="8" selected>8 秒</option>
-                    <option value="15">15 秒</option><option value="30">30 秒</option><option value="-1">永不</option>
-                  </select>
-                </div>
-              </div>
-              <div class="s-item no-tap">
-                <div class="s-icon" style="background:#AF52DE"><span class="material-icons-round">lock</span></div>
-                <div class="s-body"><div class="s-label">密码自动回遮</div><div class="s-sub">显示密码后自动遮蔽</div></div>
-                <div class="s-ctrl">
-                  <select class="s-select" id="d-sel-pw-mask" onchange="dSave('pwMask',this.value)">
-                    <option value="3">3 秒</option><option value="5" selected>5 秒</option>
-                    <option value="10">10 秒</option><option value="-1">永不</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <!-- 占位留白 -->
-            <div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Page: Settings ── -->
-      <div class="d-page" id="d-page-settings">
-        <div class="settings-wrap">
-          <!-- 外观 -->
-          <div class="settings-card">
-            <div class="settings-card-hd">外观 · 主题配色</div>
-            <div class="s-item no-tap" style="gap:14px;flex-wrap:wrap;">
-              <div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;">
-                <button class="th-btn" onclick="setTheme('a')" id="d-tb-a"><div class="th-swatch"><div class="th-half" style="background:#6750A4"></div><div class="th-half" style="background:#EADDFF"></div></div><span class="th-name">紫晶</span></button>
-                <button class="th-btn" onclick="setTheme('b')" id="d-tb-b"><div class="th-swatch"><div class="th-half" style="background:#0A0E1A"></div><div class="th-half" style="background:#4F8EF7"></div></div><span class="th-name">午夜蓝</span></button>
-                <button class="th-btn active" onclick="setTheme('c')" id="d-tb-c"><div class="th-swatch"><div class="th-half" style="background:#1E2128"></div><div class="th-half" style="background:#8AB4F8"></div></div><span class="th-name">碳灰★</span></button>
-                <button class="th-btn" onclick="setTheme('d')" id="d-tb-d"><div class="th-swatch"><div class="th-half" style="background:#0D1B12"></div><div class="th-half" style="background:#00C58E"></div></div><span class="th-name">极光绿</span></button>
-                <button class="th-btn" onclick="setTheme('e')" id="d-tb-e"><div class="th-swatch"><div class="th-half" style="background:#C5134E"></div><div class="th-half" style="background:#FFD6E2"></div></div><span class="th-name">玫瑰</span></button>
-                <button class="th-btn" onclick="setTheme('f')" id="d-tb-f"><div class="th-swatch"><div class="th-half" style="background:#1A1408"></div><div class="th-half" style="background:#F5A623"></div></div><span class="th-name">琥珀</span></button>
-                <button class="th-btn" onclick="setTheme('g')" id="d-tb-g"><div class="th-swatch"><div class="th-half" style="background:#0B57D0"></div><div class="th-half" style="background:#C2E7FF"></div></div><span class="th-name">冰川蓝</span></button>
-              </div>
-            </div>
-          </div>
-          <div class="settings-row">
-            <!-- 数据管理 -->
-            <div class="settings-card">
-              <div class="settings-card-hd">数据管理</div>
-              <div class="d-import-zone" onclick="showSnack('📥 KeePass 导入：请选择 .kdbx 或 .csv 文件（即将上线）')">
-                <span class="material-icons-round">upload_file</span>
-                <div class="d-import-zone-t">从 KeePass 导入</div>
-                <div class="d-import-zone-s">支持 .kdbx 与 .csv 格式</div>
-              </div>
-              <div class="s-item" onclick="showSnack('📤 加密导出功能即将上线')" style="margin:0 6px 10px;border-radius:10px;border:1px solid var(--outline2);">
-                <div class="s-icon" style="background:#007AFF"><span class="material-icons-round">download</span></div>
-                <div class="s-body"><div class="s-label">加密备份导出</div><div class="s-sub">导出为加密 .mfa 文件</div></div>
-                <div class="s-ctrl"><span class="material-icons-round s-chevron">chevron_right</span></div>
-              </div>
-            </div>
-            <!-- 危险 + 关于 -->
-            <div style="display:flex;flex-direction:column;gap:12px;">
-              <div class="settings-card">
-                <div class="settings-card-hd">危险操作</div>
-                <div class="s-item danger" onclick="showSnack('⚠️ 请通过正式版执行，原型不执行删除')">
-                  <div class="s-icon" style="background:#FF3B30"><span class="material-icons-round">delete_forever</span></div>
-                  <div class="s-body"><div class="s-label">清除所有数据</div><div class="s-sub">不可恢复，请先备份</div></div>
-                  <div class="s-ctrl"><span class="material-icons-round s-chevron" style="color:var(--danger)">chevron_right</span></div>
-                </div>
-              </div>
-              <div class="settings-card">
-                <div class="settings-card-hd">关于</div>
-                <div class="s-item no-tap">
-                  <div class="s-icon" style="background:#8E8E93"><span class="material-icons-round">info</span></div>
-                  <div class="s-body"><div class="s-label">版本</div></div>
-                  <div class="s-ctrl"><span class="s-val">v1.0.0-prototype</span></div>
-                </div>
-                <div class="s-item" onclick="showSnack('🔗 开源仓库链接即将上线')">
-                  <div class="s-icon" style="background:#1C1C1E"><span class="material-icons-round">code</span></div>
-                  <div class="s-body"><div class="s-label">开源仓库</div><div class="s-sub">GitHub · MIT License</div></div>
-                  <div class="s-ctrl"><span class="material-icons-round s-chevron">open_in_new</span></div>
-                </div>
+              <div class="s-ctrl">
+                <select class="s-select" id="sel-autolock" onchange="saveSetting('autolock',this.value)">
+                  <option value="0">立即</option>
+                  <option value="60">1 分钟</option>
+                  <option value="300" selected>5 分钟</option>
+                  <option value="600">10 分钟</option>
+                  <option value="1800">30 分钟</option>
+                  <option value="-1">永不</option>
+                </select>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-    </main>
+        <div class="settings-section">
+          <div class="settings-sec-hd">剪贴板安全</div>
+          <div class="settings-list">
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#007AFF"><span class="material-icons-round">content_paste</span></div>
+              <div class="s-body">
+                <div class="s-label">验证码自动清空</div>
+                <div class="s-sub">复制验证码后清空剪贴板</div>
+              </div>
+              <div class="s-ctrl">
+                <select class="s-select" id="sel-otp-clip" onchange="saveSetting('otpClip',this.value)">
+                  <option value="10">10 秒</option>
+                  <option value="15">15 秒</option>
+                  <option value="25" selected>25 秒</option>
+                  <option value="30">30 秒</option>
+                  <option value="60">60 秒</option>
+                  <option value="-1">永不</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#5856D6"><span class="material-icons-round">password</span></div>
+              <div class="s-body">
+                <div class="s-label">密码自动清空</div>
+                <div class="s-sub">复制密码后清空剪贴板</div>
+              </div>
+              <div class="s-ctrl">
+                <select class="s-select" id="sel-pw-clip" onchange="saveSetting('pwClip',this.value)">
+                  <option value="10">10 秒</option>
+                  <option value="15" selected>15 秒</option>
+                  <option value="30">30 秒</option>
+                  <option value="60">60 秒</option>
+                  <option value="120">2 分钟</option>
+                  <option value="-1">永不</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#FF3B30"><span class="material-icons-round">phonelink_erase</span></div>
+              <div class="s-body">
+                <div class="s-label">锁屏时立即清空</div>
+                <div class="s-sub">锁定应用时清空剪贴板</div>
+              </div>
+              <div class="s-ctrl">
+                <button class="toggle-sw on" id="tog-lock-clip" onclick="toggleSetting('lockClip')"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-sec-hd">显示安全</div>
+          <div class="settings-list">
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#30B0C7"><span class="material-icons-round">visibility_off</span></div>
+              <div class="s-body">
+                <div class="s-label">验证码自动回遮</div>
+                <div class="s-sub">显示验证码后自动遮蔽</div>
+              </div>
+              <div class="s-ctrl">
+                <select class="s-select" id="sel-otp-mask" onchange="saveSetting('otpMask',this.value)">
+                  <option value="5">5 秒</option>
+                  <option value="8" selected>8 秒</option>
+                  <option value="15">15 秒</option>
+                  <option value="30">30 秒</option>
+                  <option value="-1">永不</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#AF52DE"><span class="material-icons-round">lock</span></div>
+              <div class="s-body">
+                <div class="s-label">密码自动回遮</div>
+                <div class="s-sub">显示密码后自动遮蔽</div>
+              </div>
+              <div class="s-ctrl">
+                <select class="s-select" id="sel-pw-mask" onchange="saveSetting('pwMask',this.value)">
+                  <option value="3">3 秒</option>
+                  <option value="5" selected>5 秒</option>
+                  <option value="10">10 秒</option>
+                  <option value="-1">永不</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Page: Settings ── -->
+    <div class="page" id="page-settings">
+      <div class="settings-body">
+
+        <div class="settings-section">
+          <div class="settings-sec-hd">外观</div>
+          <div class="settings-list">
+            <div class="settings-item no-tap" style="flex-direction:column;align-items:flex-start;gap:12px;">
+              <div style="display:flex;align-items:center;gap:12px;width:100%;">
+                <div class="s-icon" style="background:#6750A4"><span class="material-icons-round">palette</span></div>
+                <div class="s-body">
+                  <div class="s-label">主题配色</div>
+                  <div class="s-sub" id="cur-theme-name">碳灰 (Carbon Dark)</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;padding-left:44px;">
+                <button class="th-btn" onclick="setTheme('a')" id="tb-a"><div class="th-swatch"><div class="th-half" style="background:#6750A4"></div><div class="th-half" style="background:#EADDFF"></div></div><span class="th-name">紫晶</span></button>
+                <button class="th-btn" onclick="setTheme('b')" id="tb-b"><div class="th-swatch"><div class="th-half" style="background:#0A0E1A"></div><div class="th-half" style="background:#4F8EF7"></div></div><span class="th-name">午夜蓝</span></button>
+                <button class="th-btn active" onclick="setTheme('c')" id="tb-c"><div class="th-swatch"><div class="th-half" style="background:#1E2128"></div><div class="th-half" style="background:#8AB4F8"></div></div><span class="th-name">碳灰★</span></button>
+                <button class="th-btn" onclick="setTheme('d')" id="tb-d"><div class="th-swatch"><div class="th-half" style="background:#0D1B12"></div><div class="th-half" style="background:#00C58E"></div></div><span class="th-name">极光绿</span></button>
+                <button class="th-btn" onclick="setTheme('e')" id="tb-e"><div class="th-swatch"><div class="th-half" style="background:#C5134E"></div><div class="th-half" style="background:#FFD6E2"></div></div><span class="th-name">玫瑰</span></button>
+                <button class="th-btn" onclick="setTheme('f')" id="tb-f"><div class="th-swatch"><div class="th-half" style="background:#1A1408"></div><div class="th-half" style="background:#F5A623"></div></div><span class="th-name">琥珀</span></button>
+                <button class="th-btn" onclick="setTheme('g')" id="tb-g"><div class="th-swatch"><div class="th-half" style="background:#0B57D0"></div><div class="th-half" style="background:#C2E7FF"></div></div><span class="th-name">冰川蓝</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-sec-hd">数据管理</div>
+          <div class="settings-list">
+            <div class="settings-item" onclick="openKeepassImport()">
+              <div class="s-icon" style="background:#34C759"><span class="material-icons-round">upload_file</span></div>
+              <div class="s-body">
+                <div class="s-label">从 KeePass 导入</div>
+                <div class="s-sub">支持 .kdbx 与 .csv 格式</div>
+              </div>
+              <div class="s-ctrl"><span class="material-icons-round s-chevron">chevron_right</span></div>
+            </div>
+            <div class="settings-item" onclick="showSnack('📤 加密导出功能即将上线')">
+              <div class="s-icon" style="background:#007AFF"><span class="material-icons-round">download</span></div>
+              <div class="s-body">
+                <div class="s-label">加密备份导出</div>
+                <div class="s-sub">导出为加密 .mfa 文件</div>
+              </div>
+              <div class="s-ctrl"><span class="material-icons-round s-chevron">chevron_right</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-sec-hd">危险操作</div>
+          <div class="settings-list">
+            <div class="settings-item danger" onclick="showSnack('⚠️ 请通过正式版执行，原型不执行删除')">
+              <div class="s-icon" style="background:#FF3B30"><span class="material-icons-round">delete_forever</span></div>
+              <div class="s-body">
+                <div class="s-label">清除所有数据</div>
+                <div class="s-sub">不可恢复，请先备份</div>
+              </div>
+              <div class="s-ctrl"><span class="material-icons-round s-chevron" style="color:var(--danger)">chevron_right</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-sec-hd">关于</div>
+          <div class="settings-list">
+            <div class="settings-item no-tap">
+              <div class="s-icon" style="background:#8E8E93"><span class="material-icons-round">info</span></div>
+              <div class="s-body"><div class="s-label">版本</div></div>
+              <div class="s-ctrl"><span class="s-val">v1.0.0-prototype</span></div>
+            </div>
+            <div class="settings-item" onclick="showSnack('🔗 开源仓库链接即将上线')">
+              <div class="s-icon" style="background:#1C1C1E"><span class="material-icons-round">code</span></div>
+              <div class="s-body">
+                <div class="s-label">开源仓库</div>
+                <div class="s-sub">GitHub · MIT License</div>
+              </div>
+              <div class="s-ctrl"><span class="material-icons-round s-chevron">open_in_new</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /pages-wrap -->
+
+  <!-- Bottom Nav with integrated FAB -->
+  <div class="bot-nav">
+    <button class="nav-item act" id="nav-accounts" onclick="switchPage('accounts')">
+      <div class="nav-pill"><span class="material-icons-round">key</span></div>
+      <span class="nav-label">账户</span>
+    </button>
+    <button class="nav-item" id="nav-groups" onclick="switchPage('groups')">
+      <div class="nav-pill"><span class="material-icons-round">folder_open</span></div>
+      <span class="nav-label">分组</span>
+    </button>
+    <button class="nav-fab" id="main-fab" onclick="openSheet()" title="添加账户">
+      <span class="material-icons-round">add</span>
+    </button>
+    <button class="nav-item" id="nav-security" onclick="switchPage('security')">
+      <div class="nav-pill"><span class="material-icons-round">shield</span></div>
+      <span class="nav-label">安全</span>
+    </button>
+    <button class="nav-item" id="nav-settings" onclick="switchPage('settings')">
+      <div class="nav-pill"><span class="material-icons-round">settings</span></div>
+      <span class="nav-label">设置</span>
+    </button>
   </div>
 
-  <!-- ── Add / Edit Sheet (Modal Dialog) ── -->
+  <!-- ── Add Account Sheet ── -->
   <div class="scrim" id="scrim" onclick="closeSheetOut(event)">
     <div class="sheet">
       <div class="drag-handle"></div>
@@ -1101,6 +1049,7 @@ body {
       <div class="divider-row">或手动输入</div>
 
       <div class="form">
+        <!-- Type toggle -->
         <div class="type-toggle" id="type-toggle">
           <button class="type-btn active" onclick="setSheetType('totp')" id="type-totp">
             <span class="material-icons-round">timer</span>TOTP
@@ -1110,6 +1059,7 @@ body {
           </button>
         </div>
 
+        <!-- Icon picker -->
         <div>
           <div class="form-label" style="margin-bottom:6px;">选择图标</div>
           <div class="icon-picker-row">
@@ -1136,6 +1086,7 @@ body {
           </div>
         </div>
 
+        <!-- Password field (shown for both types) -->
         <div class="field-pw">
           <input type="password" placeholder=" " id="fp"/>
           <label for="fp">密码</label>
@@ -1149,6 +1100,7 @@ body {
           </div>
         </div>
 
+        <!-- TOTP-only fields -->
         <div class="form-totp-only" id="form-totp">
           <div class="field">
             <input type="text" placeholder=" " id="fs" style="font-family:'Roboto Mono',monospace;letter-spacing:1px;"/>
@@ -1159,15 +1111,12 @@ body {
               <select><option>TOTP (30s)</option><option>HOTP</option></select>
             </div>
             <div class="field">
-              <select id="fcat">
-                <option value="work">工作</option>
-                <option value="finance">财务</option>
-                <option value="personal">个人</option>
-              </select>
+              <select id="fcat"><option value="work">工作</option><option value="finance">财务</option><option value="personal">个人</option></select>
             </div>
           </div>
         </div>
 
+        <!-- Password-only: category -->
         <div class="field" id="form-pw-cat" style="display:none;">
           <select id="fcat-pw">
             <option value="work">工作</option>
@@ -1222,46 +1171,13 @@ body {
 
 </div><!-- /app -->
 
-<!-- ── Theme Switcher ── -->
-<div class="theme-switcher">
-  <div class="theme-label">配色方案</div>
-  <button class="th-btn" onclick="setTheme('a')" id="tb-a">
-    <div class="th-swatch"><div class="th-half" style="background:#6750A4"></div><div class="th-half" style="background:#EADDFF"></div></div>
-    <span class="th-name">紫晶</span>
-  </button>
-  <button class="th-btn" onclick="setTheme('b')" id="tb-b">
-    <div class="th-swatch"><div class="th-half" style="background:#0A0E1A"></div><div class="th-half" style="background:#4F8EF7"></div></div>
-    <span class="th-name">午夜蓝</span>
-  </button>
-  <button class="th-btn active" onclick="setTheme('c')" id="tb-c">
-    <div class="th-swatch"><div class="th-half" style="background:#1E2128"></div><div class="th-half" style="background:#8AB4F8"></div></div>
-    <span class="th-name">碳灰★</span>
-  </button>
-  <button class="th-btn" onclick="setTheme('d')" id="tb-d">
-    <div class="th-swatch"><div class="th-half" style="background:#0D1B12"></div><div class="th-half" style="background:#00C58E"></div></div>
-    <span class="th-name">极光绿</span>
-  </button>
-  <button class="th-btn" onclick="setTheme('e')" id="tb-e">
-    <div class="th-swatch"><div class="th-half" style="background:#C5134E"></div><div class="th-half" style="background:#FFD6E2"></div></div>
-    <span class="th-name">玫瑰</span>
-  </button>
-  <button class="th-btn" onclick="setTheme('f')" id="tb-f">
-    <div class="th-swatch"><div class="th-half" style="background:#1A1408"></div><div class="th-half" style="background:#F5A623"></div></div>
-    <span class="th-name">琥珀</span>
-  </button>
-  <button class="th-btn" onclick="setTheme('g')" id="tb-g">
-    <div class="th-swatch"><div class="th-half" style="background:#0B57D0"></div><div class="th-half" style="background:#C2E7FF"></div></div>
-    <span class="th-name">冰川蓝</span>
-  </button>
-</div>
-
 </div><!-- /scene -->
 
 <script>
 const app = document.getElementById('app');
 
-function goMobileView() {
-  window.location.href = 'index_mobile.html';
+function goDesktopView() {
+  window.location.href = 'index.html';
 }
 
 /* ══════════════════════════════════════════
@@ -1277,15 +1193,12 @@ const accounts = [
   { id:6, icon:'💼', issuer:'公司内网',   label:'vpn.company.com',     username:'zhang.san',           password:'Corp#Vpn2024', secret:null,     cat:'work',     type:'password' },
 ];
 
-const timers = [{t:12},{t:22},{t:6},{t:25},{t:15}];
-const CIRC = 2 * Math.PI * 16;
+/* timer state — only for totp accounts */
+const timers = [{t:12},{t:22},{t:6},{t:25},{t:15}]; // indices 0-4 map to totp accounts by filter order
 
-let currentCat = null;
-let isListView = false;
+const CIRC = 2 * Math.PI * 16; // 100.5
 
-/* ══════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════ */
+/* ── RENDER ── */
 function renderList() {
   const list = document.getElementById('list');
   const cats = ['work','finance','personal'];
@@ -1293,7 +1206,6 @@ function renderList() {
   let html = '';
 
   cats.forEach(cat => {
-    if (currentCat && cat !== currentCat) return;
     const items = accounts.filter(a => a.cat === cat);
     if (items.length === 0) return;
 
@@ -1304,22 +1216,23 @@ function renderList() {
       <span class="sec-count">${items.length}</span>
     </div>`;
 
-    html += `<div class="cards-grid${isListView ? ' list-view' : ''}">`;
-    items.forEach(acct => { html += renderCard(acct); });
-    html += `</div>`;
+    items.forEach(acct => {
+      html += renderCard(acct);
+    });
   });
 
   list.innerHTML = html;
   updateAcctCount();
-  updateSidebarCounts();
   syncTimerColors();
 }
 
 function renderCard(acct) {
   const isTotp = acct.type === 'totp';
 
+  // row 2 depends on type
   let r2 = '';
   if (isTotp) {
+    // find timer index: position among totp accounts
     const totpIdx = accounts.filter(a => a.type === 'totp').indexOf(acct);
     const t = timers[totpIdx] ? timers[totpIdx].t : 30;
     r2 = `<div class="card-r2">
@@ -1349,6 +1262,7 @@ function renderCard(acct) {
     </div>`;
   }
 
+  // row 3: username + password (TOTP cards only, revealed on click)
   let r3 = '';
   if (isTotp && (acct.username || acct.password)) {
     r3 = `<div class="card-r3">`;
@@ -1407,199 +1321,26 @@ function escHtml(s) {
 }
 
 function updateAcctCount() {
-  const count = currentCat
-    ? accounts.filter(a => a.cat === currentCat).length
-    : accounts.length;
-  const el = document.getElementById('acct-count');
-  if (el) el.textContent = count + ' 个账户';
-}
-
-function updateSidebarCounts() {
-  ['work','finance','personal'].forEach(cat => {
-    const el = document.getElementById('scat-count-' + cat);
-    if (el) el.textContent = accounts.filter(a => a.cat === cat).length;
-  });
-  const allEl = document.getElementById('scat-count-all');
-  if (allEl) allEl.textContent = accounts.length;
-
-  const statsEl = document.getElementById('sidebar-stats');
-  if (statsEl) {
-    const totpN = accounts.filter(a => a.type === 'totp').length;
-    const pwN = accounts.filter(a => a.type === 'password').length;
-    statsEl.textContent = `${totpN} 个 TOTP · ${pwN} 个密码`;
-  }
+  document.getElementById('acct-count').textContent = accounts.length + ' 个账户';
 }
 
 /* ══════════════════════════════════════════
    THEME
 ══════════════════════════════════════════ */
+const THEME_LABEL_MAP = {
+  a:'紫晶 (Amethyst)', b:'午夜蓝 (Midnight)', c:'碳灰 (Carbon Dark)',
+  d:'极光绿 (Aurora)', e:'玫瑰 (Rose)', f:'琥珀 (Amber)', g:'冰川蓝 (Glacier)',
+};
+
 function setTheme(t) {
   app.dataset.theme = t;
-  // sync both external picker (tb-x) and in-settings picker (d-tb-x)
   document.querySelectorAll('.th-btn').forEach(b => b.classList.remove('active'));
-  ['tb-'+t, 'd-tb-'+t].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('active');
-  });
+  const el = document.getElementById('tb-'+t);
+  if (el) el.classList.add('active');
+  const nameEl = document.getElementById('cur-theme-name');
+  if (nameEl) nameEl.textContent = THEME_LABEL_MAP[t] || t;
   setTimeout(syncTimerColors, 20);
 }
-
-/* ══════════════════════════════════════════
-   DESKTOP PAGE SWITCHING
-══════════════════════════════════════════ */
-const D_PAGE_TITLES = {
-  accounts:'所有账户', groups:'分组管理', security:'安全设置', settings:'设置',
-};
-const D_PAGE_SUBS = {
-  accounts:'', groups:'管理账户分类', security:'数据安全与隐私保护', settings:'偏好与数据管理',
-};
-
-function switchNav(btn) {
-  document.querySelectorAll('.snav-item').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const page = btn.dataset.page || 'accounts';
-
-  document.querySelectorAll('.d-page').forEach(p => p.classList.remove('active'));
-  document.getElementById('d-page-' + page).classList.add('active');
-
-  const titleEl = document.getElementById('content-title');
-  const subEl = document.getElementById('acct-count');
-  if (titleEl) titleEl.textContent = D_PAGE_TITLES[page] || page;
-  if (subEl) {
-    subEl.textContent = D_PAGE_SUBS[page] || '';
-    subEl.style.display = page === 'accounts' ? '' : (D_PAGE_SUBS[page] ? '' : 'none');
-  }
-
-  // Show/hide category sidebar & add button only on accounts
-  const cats = document.querySelector('.sidebar-divider');
-  const catSec = document.querySelector('.sidebar-sec-label');
-  const catList = document.querySelector('.sidebar-cats');
-  const addBtn = document.querySelector('.sidebar-bottom');
-  const stats = document.getElementById('sidebar-stats');
-  [cats, catSec, catList, addBtn, stats].forEach(el => {
-    if (el) el.style.display = page === 'accounts' ? '' : 'none';
-  });
-
-  // Show/hide search in toolbar
-  const toolbarSearch = document.querySelector('.toolbar-search');
-  const viewBtns = document.querySelectorAll('.toolbar-ctrl');
-  if (toolbarSearch) toolbarSearch.style.display = page === 'accounts' ? '' : 'none';
-  viewBtns.forEach(b => b.style.display = page === 'accounts' ? '' : 'none');
-
-  if (page === 'groups') renderDGroups();
-}
-
-/* ══════════════════════════════════════════
-   DESKTOP GROUPS
-══════════════════════════════════════════ */
-const D_GROUP_DEFS = [
-  { key:'work',     label:'工作', bg:'var(--cat-work)',    icon:'work',            desc:'工作与职业相关账户' },
-  { key:'finance',  label:'财务', bg:'var(--cat-finance)', icon:'account_balance', desc:'银行、支付与投资账户' },
-  { key:'personal', label:'个人', bg:'var(--cat-personal)',icon:'person',          desc:'个人与社交账户' },
-];
-
-function renderDGroups() {
-  const el = document.getElementById('d-group-grid');
-  if (!el) return;
-  el.innerHTML = D_GROUP_DEFS.map((g, i) => {
-    const all   = accounts.filter(a => a.cat === g.key);
-    const totpN = all.filter(a => a.type === 'totp').length;
-    const pwN   = all.filter(a => a.type === 'password').length;
-    const stats = [totpN && `${totpN} TOTP`, pwN && `${pwN} 密码`].filter(Boolean);
-    return `<div class="d-group-card" style="animation-delay:${i*60}ms">
-      <div class="d-group-card-top">
-        <div class="d-group-icon" style="background:${g.bg}">
-          <span class="material-icons-round">${g.icon}</span>
-        </div>
-        <div>
-          <div class="d-group-name">${g.label}</div>
-          <div class="d-group-desc">${g.desc}</div>
-        </div>
-      </div>
-      <div class="d-group-stats">
-        <span class="d-group-stat">${all.length} 个账户</span>
-        ${stats.map(s => `<span class="d-group-stat">${s}</span>`).join('')}
-      </div>
-      <div class="d-group-actions">
-        <button class="d-group-btn" onclick="filterCatAndGo('${g.key}')">
-          <span class="material-icons-round">open_in_new</span>查看账户
-        </button>
-        <button class="d-group-btn" onclick="showSnack('编辑分组功能即将上线')">
-          <span class="material-icons-round">edit</span>编辑
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function filterCatAndGo(cat) {
-  filterCat(cat);
-  const accountsBtn = document.querySelector('.snav-item[data-page="accounts"]');
-  if (accountsBtn) switchNav(accountsBtn);
-}
-
-/* ══════════════════════════════════════════
-   DESKTOP SETTINGS INTERACTIONS
-══════════════════════════════════════════ */
-const D_SETTING_LABELS = {
-  autolock:{ '0':'立即','60':'1 分钟','300':'5 分钟','600':'10 分钟','1800':'30 分钟','-1':'永不' },
-  otpClip: { '10':'10 秒','15':'15 秒','25':'25 秒','30':'30 秒','60':'60 秒','-1':'永不' },
-  pwClip:  { '10':'10 秒','15':'15 秒','30':'30 秒','60':'60 秒','120':'2 分钟','-1':'永不' },
-  otpMask: { '5':'5 秒','8':'8 秒','15':'15 秒','30':'30 秒','-1':'永不' },
-  pwMask:  { '3':'3 秒','5':'5 秒','10':'10 秒','-1':'永不' },
-};
-const D_SETTING_NAMES = {
-  autolock:'自动锁屏', otpClip:'验证码清空时间',
-  pwClip:'密码清空时间', otpMask:'验证码回遮', pwMask:'密码回遮',
-};
-
-function dToggle(key) {
-  const el = document.getElementById('d-tog-' + key);
-  if (!el) return;
-  el.classList.toggle('on');
-  const on = el.classList.contains('on');
-  showSnack({ bio: on ? '生物认证已开启' : '生物认证已关闭',
-    lockClip: on ? '锁屏时将立即清空剪贴板' : '锁屏时不自动清空剪贴板' }[key] || '设置已更新');
-}
-
-function dSave(key, value) {
-  const label = D_SETTING_LABELS[key]?.[value] || value;
-  showSnack(`${D_SETTING_NAMES[key] || key} 已设为 ${label}`);
-}
-
-/* ══════════════════════════════════════════
-   NAVIGATION & CATEGORY FILTER
-══════════════════════════════════════════ */
-function filterCat(cat) {
-  currentCat = cat || null;
-  document.querySelectorAll('.scat-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.cat === (cat || 'all'));
-  });
-  const titles = { null:'所有账户', work:'工作账户', finance:'财务账户', personal:'个人账户' };
-  const titleEl = document.getElementById('content-title');
-  if (titleEl) titleEl.textContent = titles[cat] || '所有账户';
-  renderList();
-  const inp = document.querySelector('.toolbar-search input');
-  if (inp) inp.value = '';
-}
-
-/* ══════════════════════════════════════════
-   VIEW TOGGLE (Grid / List)
-══════════════════════════════════════════ */
-function toggleView(btn) {
-  isListView = !isListView;
-  const icon = document.getElementById('view-icon');
-  if (icon) icon.textContent = isListView ? 'view_list' : 'grid_view';
-  // toggle grid columns via class
-  document.querySelectorAll('.cards-grid').forEach(g => {
-    g.classList.toggle('list-view', isListView);
-  });
-}
-
-/* add list-view style dynamically */
-const styleEl = document.createElement('style');
-styleEl.textContent = `.cards-grid.list-view{grid-template-columns:1fr;}`;
-document.head.appendChild(styleEl);
 
 /* ══════════════════════════════════════════
    TIMER ENGINE
@@ -1626,6 +1367,7 @@ setInterval(() => {
   timers.forEach((s, i) => {
     s.t--; if (s.t <= 0) {
       s.t = 30;
+      // re-mask revealed totp cards
       const totpAccounts = accounts.filter(a => a.type === 'totp');
       const acct = totpAccounts[i];
       if (acct) {
@@ -1645,6 +1387,7 @@ setInterval(() => {
     ring.style.stroke = col;
     tn.style.color = col;
     tn.textContent = s.t;
+    // update otp color class
     const totpAccounts = accounts.filter(a => a.type === 'totp');
     const acct = totpAccounts[i];
     if (acct) {
@@ -1667,6 +1410,7 @@ function toggleReveal(card) {
   const type = card.dataset.type;
   const isRevealed = card.classList.contains('revealed');
 
+  // close other revealed cards
   document.querySelectorAll('.card.revealed').forEach(c => {
     if (c !== card) {
       const j = parseInt(c.dataset.id);
@@ -1692,12 +1436,14 @@ function toggleReveal(card) {
           otp.classList.remove('masked');
         }
       }
+      // auto-hide after 8s
       clearTimeout(revealTimers[id]);
       revealTimers[id] = setTimeout(() => {
         card.classList.remove('revealed');
         maskCard(id, 'totp');
       }, 8000);
     } else {
+      // password type: show password
       const acct = accounts.find(a => a.id === id);
       const pwEl = document.getElementById('pw-'+id);
       if (acct && acct.password && pwEl) {
@@ -1705,6 +1451,7 @@ function toggleReveal(card) {
         pwEl.classList.remove('masked-pw');
         pwEl.classList.add('revealed-pw');
       }
+      // auto-hide after 5s
       clearTimeout(revealTimers[id]);
       revealTimers[id] = setTimeout(() => {
         card.classList.remove('revealed');
@@ -1721,12 +1468,14 @@ function maskCard(id, type) {
   }
   const pwEl = document.getElementById('pw-'+id);
   if (pwEl) { pwEl.textContent = '••••••••'; pwEl.classList.add('masked-pw'); pwEl.classList.remove('revealed-pw'); }
+  // mask r3 password
   const r3pw = document.getElementById('r3-pw-'+id);
   if (r3pw) { r3pw.textContent = '••••••••'; r3pw.classList.add('masked-pw'); }
   const r3eye = document.getElementById('r3-eye-'+id);
   if (r3eye) r3eye.textContent = 'visibility';
 }
 
+/* ── TOTP card row 3 password toggle ── */
 let r3PwTimers = {};
 function toggleR3Pw(id) {
   const el = document.getElementById('r3-pw-'+id);
@@ -1761,6 +1510,7 @@ const copyTs = {};
 function doCopyOtp(id) {
   const acct = accounts.find(a => a.id === id);
   if (!acct || !acct.secret) return;
+  const code = acct.secret.slice(0,3) + ' ' + acct.secret.slice(3);
   if (navigator.clipboard) navigator.clipboard.writeText(acct.secret);
   showCopyFeedback(id, 'otp');
   showSnack('验证码已复制，25秒后自动清除剪贴板');
@@ -1775,7 +1525,9 @@ function doCopyPw(id) {
   const acct = accounts.find(a => a.id === id);
   if (!acct || !acct.password) return;
   if (navigator.clipboard) navigator.clipboard.writeText(acct.password);
-  if (acct.type === 'totp') {
+  // determine which copy chip to update
+  const isTotp = acct.type === 'totp';
+  if (isTotp) {
     showCopyFeedbackR3(id);
   } else {
     showCopyFeedback(id, 'pw');
@@ -1797,6 +1549,7 @@ function showCopyFeedback(id, suffix) {
   if (ct) ct.textContent = '已复制';
   if (card) card.classList.add('copied');
 }
+
 function resetCopyFeedback(id, suffix) {
   const ci = document.getElementById('ci-'+(suffix==='pw'?'pw-':'')+id);
   const ct = document.getElementById('ct-'+(suffix==='pw'?'pw-':'')+id);
@@ -1805,6 +1558,7 @@ function resetCopyFeedback(id, suffix) {
   if (ct) ct.textContent = '复制';
   if (card) card.classList.remove('copied');
 }
+
 function showCopyFeedbackR3(id) {
   const ci = document.getElementById('ci-r3pw-'+id);
   const ct = document.getElementById('ct-r3pw-'+id);
@@ -1849,14 +1603,6 @@ function filterCards(q) {
     const t = (acct.issuer + ' ' + acct.label + ' ' + (acct.username || '')).toLowerCase();
     c.style.display = t.includes(q) ? '' : 'none';
   });
-  // Hide sections whose grid has no visible cards
-  document.querySelectorAll('[data-sec]').forEach(sec => {
-    const grid = sec.nextElementSibling;
-    if (!grid) return;
-    const hasVisible = Array.from(grid.querySelectorAll('.card')).some(c => c.style.display !== 'none');
-    sec.style.display = hasVisible ? '' : 'none';
-    grid.style.display = hasVisible ? '' : 'none';
-  });
 }
 
 /* ══════════════════════════════════════════
@@ -1882,6 +1628,7 @@ function setSheetType(type) {
   document.getElementById('type-pw').classList.toggle('active', type === 'password');
   document.getElementById('form-totp').classList.toggle('hidden', type === 'password');
   document.getElementById('form-pw-cat').style.display = type === 'password' ? '' : 'none';
+  // scan zone visible only for totp
   document.querySelector('.scan-zone').style.display = type === 'totp' ? '' : 'none';
   document.querySelector('.divider-row').style.display = type === 'totp' ? '' : 'none';
 }
@@ -1895,14 +1642,20 @@ function resetSheet() {
   document.getElementById('fp').value = '';
   document.getElementById('fs').value = '';
   setSheetType('totp');
+  // reset icon
   document.querySelectorAll('.icon-opt').forEach((o,i) => o.classList.toggle('picked', i === 0));
 }
 
 function toggleSheetPwVis() {
   const inp = document.getElementById('fp');
   const eye = document.getElementById('fp-eye');
-  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = 'visibility_off'; }
-  else { inp.type = 'password'; eye.textContent = 'visibility'; }
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    eye.textContent = 'visibility_off';
+  } else {
+    inp.type = 'password';
+    eye.textContent = 'visibility';
+  }
 }
 
 function genPassword() {
@@ -1924,6 +1677,7 @@ function submitSheet() {
   if (sheetType === 'password' && !password) { showSnack('密码类型必须填写密码'); return; }
 
   if (editingId !== null) {
+    // edit existing
     const acct = accounts.find(a => a.id === editingId);
     if (acct) {
       acct.issuer = issuer;
@@ -1938,11 +1692,13 @@ function submitSheet() {
         acct.secret = null;
         acct.cat = document.getElementById('fcat-pw').value;
       }
+      // icon
       const picked = document.querySelector('.icon-opt.picked');
       if (picked) acct.icon = picked.textContent.trim();
     }
     showSnack('账户已更新');
   } else {
+    // add new
     const newId = Math.max(...accounts.map(a => a.id), -1) + 1;
     const picked = document.querySelector('.icon-opt.picked');
     const icon = picked ? picked.textContent.trim() : '🔑';
@@ -1951,14 +1707,22 @@ function submitSheet() {
       : document.getElementById('fcat-pw').value;
 
     accounts.push({
-      id: newId, icon, issuer,
+      id: newId,
+      icon: icon,
+      issuer: issuer,
       label: label || issuer,
       username: label,
       password: password || null,
       secret: sheetType === 'totp' ? (secret || null) : null,
-      cat, type: sheetType,
+      cat: cat,
+      type: sheetType,
     });
-    if (sheetType === 'totp') timers.push({t: 30});
+
+    // add timer for totp
+    if (sheetType === 'totp') {
+      timers.push({t: 30});
+    }
+
     showSnack('账户已添加');
   }
 
@@ -1966,28 +1730,41 @@ function submitSheet() {
   renderList();
 }
 
+/* ── Edit ── */
 function editAccount(id) {
   const acct = accounts.find(a => a.id === id);
   if (!acct) return;
   editingId = id;
+
   document.getElementById('sheet-title').textContent = '编辑账户';
   document.getElementById('sheet-submit').innerHTML = '<span class="material-icons-round">save</span>保存修改';
+
   document.getElementById('fi').value = acct.issuer;
   document.getElementById('fa').value = acct.username || '';
   document.getElementById('fp').value = acct.password || '';
   document.getElementById('fs').value = acct.secret || '';
+
   setSheetType(acct.type);
-  if (acct.type === 'totp') document.getElementById('fcat').value = acct.cat;
-  else document.getElementById('fcat-pw').value = acct.cat;
+
+  if (acct.type === 'totp') {
+    document.getElementById('fcat').value = acct.cat;
+  } else {
+    document.getElementById('fcat-pw').value = acct.cat;
+  }
+
+  // set icon
   document.querySelectorAll('.icon-opt').forEach(o => {
     o.classList.toggle('picked', o.textContent.trim() === acct.icon);
   });
+
   openSheet();
 }
 
+/* ── Delete ── */
 function deleteAccount(id) {
   const idx = accounts.findIndex(a => a.id === id);
   if (idx === -1) return;
+  // remove timer if totp
   if (accounts[idx].type === 'totp') {
     const totpIdx = accounts.filter(a => a.type === 'totp').findIndex(a => a.id === id);
     if (totpIdx !== -1) timers.splice(totpIdx, 1);
@@ -1997,6 +1774,7 @@ function deleteAccount(id) {
   showSnack('账户已删除');
 }
 
+/* ── Icon picker ── */
 function pickIcon(el) {
   document.querySelectorAll('.icon-opt').forEach(o => o.classList.remove('picked'));
   el.classList.add('picked');
@@ -2019,7 +1797,7 @@ function hideSnack() { document.getElementById('snack').classList.remove('show')
    LOCK SCREEN
 ══════════════════════════════════════════ */
 let pin = '', pinAttempts = 0;
-const CORRECT_PIN = '123456';
+const CORRECT_PIN = '123456'; // demo
 
 function showLock() {
   document.getElementById('lockOv').classList.add('show');
@@ -2053,7 +1831,9 @@ function checkPin() {
       : 'PIN 错误，请重试'
     );
     setTimeout(() => {
-      for (let i = 0; i < 6; i++) document.getElementById('d'+i).classList.remove('err');
+      for (let i = 0; i < 6; i++) {
+        document.getElementById('d'+i).classList.remove('err');
+      }
       pin = ''; dots();
     }, 700);
   }
@@ -2075,6 +1855,106 @@ function unlock() {
   document.getElementById('lockOv').classList.remove('show');
   showSnack('已解锁');
   pin = '';
+}
+
+/* ══════════════════════════════════════════
+   PAGE SWITCHING
+══════════════════════════════════════════ */
+const PAGE_TITLES = {
+  accounts:'MFA Manager', groups:'分组管理',
+  security:'安全', settings:'设置',
+};
+const THEME_NAMES = {
+  a:'紫晶 (Amethyst)', b:'午夜蓝 (Midnight)', c:'碳灰 (Carbon Dark)',
+  d:'极光绿 (Aurora)', e:'玫瑰 (Rose)', f:'琥珀 (Amber)', g:'冰川蓝 (Glacier)',
+};
+
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('act'));
+  const btn = document.getElementById('nav-' + name);
+  if (btn) btn.classList.add('act');
+  document.querySelector('.bar-title').textContent = PAGE_TITLES[name] || 'MFA Manager';
+  const sub = document.getElementById('acct-count');
+  sub.style.display = name === 'accounts' ? '' : 'none';
+  const fab = document.getElementById('main-fab');
+  if (fab) fab.style.display = name === 'accounts' ? '' : 'none';
+  if (name === 'groups') renderGroups();
+}
+
+/* ══════════════════════════════════════════
+   GROUPS
+══════════════════════════════════════════ */
+const groupDefs = [
+  { key:'work',     label:'工作', colorVar:'var(--cat-work)',     icon:'work',            desc:'工作与职业相关账户' },
+  { key:'finance',  label:'财务', colorVar:'var(--cat-finance)',   icon:'account_balance', desc:'银行、支付与投资账户' },
+  { key:'personal', label:'个人', colorVar:'var(--cat-personal)',  icon:'person',          desc:'个人与社交账户' },
+];
+
+function renderGroups() {
+  const el = document.getElementById('group-cards-list');
+  if (!el) return;
+  el.innerHTML = groupDefs.map((g, i) => {
+    const count = accounts.filter(a => a.cat === g.key).length;
+    const totpN = accounts.filter(a => a.cat === g.key && a.type === 'totp').length;
+    const pwN   = accounts.filter(a => a.cat === g.key && a.type === 'password').length;
+    const meta  = [totpN && `${totpN} TOTP`, pwN && `${pwN} 密码`].filter(Boolean).join(' · ') || '暂无账户';
+    return `<div class="group-card" style="animation-delay:${i * 60}ms">
+      <div class="group-card-dot" style="background:${g.colorVar}"></div>
+      <div class="group-card-info">
+        <div class="group-card-name">${g.label}</div>
+        <div class="group-card-meta">${meta}</div>
+      </div>
+      <span class="group-card-badge">${count}</span>
+      <div class="group-card-actions">
+        <button class="icon-btn" onclick="event.stopPropagation();showSnack('编辑分组功能即将上线')" title="编辑">
+          <span class="material-icons-round" style="font-size:18px">edit</span>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addGroup() { showSnack('自定义分组功能即将上线'); }
+
+/* ══════════════════════════════════════════
+   SETTINGS INTERACTIONS
+══════════════════════════════════════════ */
+const SETTING_LABELS = {
+  autolock: { '0':'立即', '60':'1 分钟', '300':'5 分钟', '600':'10 分钟', '1800':'30 分钟', '-1':'永不' },
+  otpClip:  { '10':'10 秒', '15':'15 秒', '25':'25 秒', '30':'30 秒', '60':'60 秒', '-1':'永不' },
+  pwClip:   { '10':'10 秒', '15':'15 秒', '30':'30 秒', '60':'60 秒', '120':'2 分钟', '-1':'永不' },
+  otpMask:  { '5':'5 秒', '8':'8 秒', '15':'15 秒', '30':'30 秒', '-1':'永不' },
+  pwMask:   { '3':'3 秒', '5':'5 秒', '10':'10 秒', '-1':'永不' },
+};
+const SETTING_NAMES = {
+  autolock:'自动锁屏', otpClip:'验证码清空时间',
+  pwClip:'密码清空时间', otpMask:'验证码回遮', pwMask:'密码回遮',
+};
+
+function toggleSetting(key) {
+  const el = document.getElementById('tog-' + key);
+  if (!el) return;
+  el.classList.toggle('on');
+  const on = el.classList.contains('on');
+  const msgs = {
+    bio:      on ? '生物认证已开启' : '生物认证已关闭',
+    lockClip: on ? '锁屏时将立即清空剪贴板' : '锁屏时不自动清空剪贴板',
+  };
+  showSnack(msgs[key] || '设置已更新');
+}
+
+function saveSetting(key, value) {
+  const label = SETTING_LABELS[key]?.[value] || value;
+  showSnack(`${SETTING_NAMES[key] || key} 已设为 ${label}`);
+}
+
+/* ══════════════════════════════════════════
+   KEEPASS IMPORT (stub UI)
+══════════════════════════════════════════ */
+function openKeepassImport() {
+  showSnack('📥 KeePass 导入：请选择 .kdbx 或 .csv 文件（功能即将上线）');
 }
 
 /* ══════════════════════════════════════════

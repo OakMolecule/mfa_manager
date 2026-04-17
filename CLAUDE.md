@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MFA Manager — a local-first desktop TOTP authenticator app prototype. The project has three components:
 
-1. **UI prototype** (`index.html`) — A single-file HTML/CSS/JS mockup of the MFA Manager desktop app. No build tools, no framework. Open directly in a browser.
+1. **UI prototype** (`index.html`) — A single-file HTML/CSS/JS desktop-first mockup of MFA Manager. No build tools, no framework. Open directly in a browser.
 2. **Slint UI** (`slint_ui/`) — A Rust+Slint port of the HTML prototype. Uses `slint 1.9` and Rust edition 2024. Mirrors the same layout and demo data but is missing the theme switcher and add/edit account sheet.
 3. **Multi-agent design system** (`agents.py`) — A Python script using the Anthropic SDK to run a 4-agent pipeline (Architect → Reviewer → Coder → Tester) that designs and implements the core TOTP engine in Rust.
 
@@ -23,10 +23,11 @@ MFA Manager — a local-first desktop TOTP authenticator app prototype. The proj
 
 Self-contained single-file app with no external dependencies beyond Google Fonts (Inter, Roboto Mono, Material Icons Round).
 
-- **Theming**: 7 color schemes (a–g) via `data-theme` attribute on `.app`. CSS custom properties define all tokens. Theme switcher at bottom of the page.
-- **TOTP display**: Demo OTP codes in `OTP_CODES` array, 30-second countdown timers with circular SVG progress rings. Codes auto-mask after 8s reveal. Copy-to-clipboard with auto-clear after 25s.
+- **Theming**: 7 color schemes (a–g) via `data-theme` attribute on `.app`. CSS custom properties define all tokens. Theme switcher stays below the app window.
+- **TOTP display**: Demo OTP codes are stored in each account object (`secret`), with 30-second countdown timers and circular SVG progress rings. Codes auto-mask after 8s reveal. Copy-to-clipboard with auto-clear after 25s.
 - **Lock screen**: 6-digit PIN entry with keypad, attempt counting, shake animation on error. Demo PIN is `123456`, auto-entered on load.
-- **Layout**: Fixed 400×720px app shell (macOS-style traffic lights, search bar, card list, bottom sheet for adding entries, snackbar notifications).
+- **Layout**: Desktop app window (`1100×700`) with macOS-style title bar, left sidebar navigation/category filter, right content area, 2-column account grid, centered add/edit modal, and snackbar notifications.
+- **Desktop interactions**: Category filter in sidebar, grid/list view toggle, section-level rendering by category, and search that hides empty sections.
 
 ### agents.py — Multi-Agent Pipeline
 
