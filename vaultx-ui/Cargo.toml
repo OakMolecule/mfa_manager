@@ -1,0 +1,31 @@
+[package]
+name = "vaultx-ui"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "vaultx"
+path = "src/main.rs"
+
+[dependencies]
+vaultx-core = { path = "../vaultx-core" }
+
+uuid = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+zeroize = { workspace = true }
+secrecy = { workspace = true }
+thiserror = { workspace = true }
+
+# UI 框架
+iced = { version = "0.13", features = ["tokio"] }
+
+# 剪贴板
+arboard = "3"
+
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+
+# 平台目录（金库默认路径）
+dirs = "5"

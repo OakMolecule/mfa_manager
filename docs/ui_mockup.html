@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VaultX UI Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    .material-icons-round { font-family: 'Material Icons Round'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; vertical-align: middle; user-select: none; }
+    .mi { font-family: 'Material Icons Round'; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-smoothing: antialiased; vertical-align: middle; user-select: none; }
+    :root {
+      --primary:#1976D2;--primary-light:#42A5F5;--primary-dark:#0D47A1;
+      --primary-container:#BBDEFB;--on-primary:#FFFFFF;
+      --surface:#FAFAFA;--surface-variant:#E3F2FD;
+      --on-surface:#1A1A1A;--on-surface-variant:#455A64;
+      --outline:#90A4AE;--outline-variant:#C5CAE9;
+      --error:#D32F2F;--card-bg:#FFFFFF;--sidebar-bg:#E3F2FD;
+      --topbar-bg:#1976D2;--shadow:rgba(0,0,0,0.1);
+      --radius-card:12px;--radius-btn:8px;--radius-input:8px;--radius-dialog:16px;
+    }
+    .dark-mode {
+      --primary:#90CAF9;--primary-light:#BBDEFB;--primary-dark:#42A5F5;
+      --primary-container:#0D47A1;--on-primary:#003258;
+      --surface:#121212;--surface-variant:#1E2A3A;
+      --on-surface:#E8EAED;--on-surface-variant:#90A4AE;
+      --outline:#455A64;--outline-variant:#2A3A4A;--error:#EF9A9A;
+      --card-bg:#1E1E1E;--sidebar-bg:#1A2433;--topbar-bg:#0D1B2A;--shadow:rgba(0,0,0,0.4);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter','PingFang SC','Microsoft YaHei',sans-serif;transition:background-color 0.3s,color 0.3s,border-color 0.3s;}
+    .mono,.field-val.mono,.generated-pw,.totp-code,.field-val.totp-inline{font-family:'Roboto Mono','Courier New',monospace!important;}
+    body{background:#CFD8DC;min-height:100vh;padding:20px;}
+    .screen-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+    .screen-tab{padding:8px 16px;border-radius:20px;border:2px solid #1976D2;background:white;color:#1976D2;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;}
+    .screen-tab.active{background:#1976D2;color:white;}
+    .screen-tab:hover:not(.active){background:#E3F2FD;}
+    .app-window{width:920px;height:640px;background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:none;position:relative;flex-direction:column;}
+    .app-window.active{display:flex;}
+    .app-window.center-layout{justify-content:center;align-items:center;}
+    .topbar{height:56px;background:var(--topbar-bg);color:white;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;box-shadow:0 2px 8px var(--shadow);}
+    .topbar-title{font-size:18px;font-weight:600;flex:1;}
+    .search-wrap{position:relative;flex:1;}
+    .topbar-search{width:100%;height:36px;background:rgba(255,255,255,0.15);border:none;border-radius:18px;padding:0 16px 0 40px;color:white;font-size:14px;outline:none;}
+    .topbar-search::placeholder{color:rgba(255,255,255,0.7);}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.7);font-size:15px;}
+    .icon-btn{width:36px;height:36px;border:none;background:rgba(255,255,255,0.15);border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:background 0.2s;flex-shrink:0;}
+    .icon-btn:hover{background:rgba(255,255,255,0.28);}
+    .topbar-back{background:transparent;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 8px;border-radius:50%;transition:background 0.2s;}
+    .topbar-back:hover{background:rgba(255,255,255,0.15);}
+    .main-layout{display:flex;flex:1;overflow:hidden;}
+    .sidebar{width:200px;background:var(--sidebar-bg);padding:12px 0;flex-shrink:0;overflow-y:auto;}
+    .sidebar-section{padding:0 10px;margin-bottom:4px;}
+    .sidebar-section-title{font-size:11px;font-weight:600;color:var(--on-surface-variant);text-transform:uppercase;letter-spacing:0.5px;padding:8px 4px 4px;}
+    .sidebar-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--radius-btn);cursor:pointer;color:var(--on-surface);font-size:13px;position:relative;transition:background 0.15s;}
+    .sidebar-item:hover{background:rgba(25,118,210,0.1);}
+    .sidebar-item.active{background:var(--primary-container);color:var(--primary);font-weight:600;}
+    .sidebar-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--primary);border-radius:0 3px 3px 0;}
+    .sidebar-badge{margin-left:auto;background:var(--outline-variant);color:var(--on-surface-variant);border-radius:10px;padding:1px 7px;font-size:12px;font-weight:500;}
+    .sidebar-item.active .sidebar-badge{background:var(--primary);color:white;}
+    .sidebar-divider{height:1px;background:var(--outline-variant);margin:6px 10px;}
+    .content{flex:1;overflow-y:auto;padding:16px;background:var(--surface);}
+    .entry-card{background:var(--card-bg);border-radius:var(--radius-card);padding:0;margin-bottom:10px;display:flex;flex-direction:column;border:1.5px solid transparent;box-shadow:0 1px 4px var(--shadow);transition:all 0.15s;overflow:hidden;}
+    .entry-card:hover{border-color:var(--primary-container);box-shadow:0 3px 10px var(--shadow);transform:translateY(-1px);}
+    .entry-card-header{display:flex;align-items:center;gap:12px;padding:11px 14px 10px;cursor:pointer;transition:background 0.15s;}
+    .entry-card-header:hover{background:var(--surface-variant);}
+    .entry-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;}
+    .entry-info{flex:1;min-width:0;}
+    .entry-title{font-size:15px;font-weight:600;color:var(--on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .entry-sub{font-size:13px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+    .entry-time{font-size:12px;color:var(--outline);flex-shrink:0;}
+    .entry-fields{border-top:1px solid var(--outline-variant);}
+    .entry-field-row{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--outline-variant);min-height:42px;}
+    .entry-field-row:last-child{border-bottom:none;}
+    .entry-field-row-split{display:flex;border-bottom:1px solid var(--outline-variant);}
+    .entry-field-row-split:last-child{border-bottom:none;}
+    .field-half{display:flex;align-items:center;gap:6px;padding:8px 12px;flex:1;min-width:0;overflow:hidden;}
+    .field-half+.field-half{border-left:1px solid var(--outline-variant);}
+    .field-lbl{font-size:11px;color:var(--on-surface-variant);flex-shrink:0;}
+    .field-val{flex:1;font-size:13px;color:var(--on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .field-val.mono{font-family:monospace;font-size:13px;letter-spacing:1px;}
+    .field-val.totp-inline{font-size:22px;font-weight:800;letter-spacing:5px;color:var(--primary);font-variant-numeric:tabular-nums;}
+    .totp-mini-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+    .totp-mini-bar{width:44px;height:4px;background:var(--outline-variant);border-radius:2px;overflow:hidden;}
+    .totp-mini-fill{height:100%;border-radius:2px;background:var(--primary);}
+    .totp-mini-timer{font-size:12px;color:var(--on-surface-variant);white-space:nowrap;font-weight:500;}
+    .btn-copy-icon{width:28px;height:28px;border:none;border-radius:6px;background:var(--primary-container);color:var(--primary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all 0.2s;}
+    .btn-copy-icon.copied{background:#E8F5E9;color:#2E7D32;font-size:13px;}
+    .dark-mode .btn-copy-icon.copied{background:#1B5E20;color:#A5D6A7;}
+    .btn-eye-mini{width:24px;height:24px;border-radius:50%;border:none;background:transparent;color:var(--on-surface-variant);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
+    .form-section{background:var(--card-bg);border:1.5px solid var(--outline-variant);border-radius:var(--radius-card);margin-bottom:14px;overflow:hidden;}
+    .form-section-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface-variant);cursor:pointer;user-select:none;}
+    .form-section-title{font-size:14px;font-weight:600;color:var(--on-surface);}
+    .form-section-body{padding:16px 16px 4px;}
+    .form-section-body.hidden{display:none;}
+    .btn-primary{background:var(--primary);color:var(--on-primary);border:none;border-radius:var(--radius-btn);padding:10px 24px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;}
+    .btn-primary:hover{background:var(--primary-dark);box-shadow:0 3px 12px rgba(25,118,210,0.35);}
+    .btn-outlined{background:transparent;color:var(--primary);border:2px solid var(--primary);border-radius:var(--radius-btn);padding:9px 24px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+    .btn-outlined:hover{background:var(--surface-variant);}
+    .btn-danger{background:var(--error);color:white;border:none;border-radius:var(--radius-btn);padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+    .btn-sm{padding:6px 12px;font-size:13px;}
+    .btn-icon{width:32px;height:32px;border-radius:50%;border:none;background:var(--surface-variant);color:var(--primary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;transition:all 0.2s;}
+    .btn-icon:hover{background:var(--primary-container);}
+    .btn-copy{padding:6px 12px;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:var(--primary-container);color:var(--primary);transition:all 0.2s;white-space:nowrap;}
+    .btn-copy.copied{background:#E8F5E9;color:#2E7D32;}
+    .input-field{width:100%;height:44px;border:1.5px solid var(--outline);border-radius:var(--radius-input);padding:0 12px;font-size:14px;background:var(--card-bg);color:var(--on-surface);outline:none;transition:border-color 0.2s;}
+    .input-field:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(25,118,210,0.12);}
+    .input-wrap{position:relative;}
+    .input-suffix{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:4px;align-items:center;}
+    .input-label{font-size:13px;font-weight:500;color:var(--on-surface-variant);margin-bottom:6px;}
+    .form-group{margin-bottom:16px;}
+    .unlock-bg{position:absolute;inset:0;background:linear-gradient(135deg,#E3F2FD 0%,#FAFAFA 60%,#E8F5E9 100%);}
+    .unlock-card{background:var(--card-bg);border-radius:var(--radius-dialog);padding:40px;width:380px;box-shadow:0 8px 40px rgba(25,118,210,0.18);position:relative;z-index:1;}
+    .unlock-logo{text-align:center;margin-bottom:28px;}
+    .logo-circle{width:68px;height:68px;background:linear-gradient(135deg,#1976D2,#42A5F5);border-radius:20px;display:inline-flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:12px;box-shadow:0 4px 16px rgba(25,118,210,0.4);}
+    .logo-name{font-size:26px;font-weight:800;color:var(--primary);letter-spacing:-0.5px;}
+    .logo-sub{font-size:13px;color:var(--on-surface-variant);margin-top:4px;}
+    .error-msg{background:#FFEBEE;border:1px solid #FFCDD2;border-radius:8px;padding:10px 14px;color:var(--error);font-size:13px;display:flex;align-items:center;gap:8px;margin-top:8px;}
+    .dark-mode .error-msg{background:#4A1515;border-color:#7B2020;}
+    .totp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+    .totp-card{background:var(--card-bg);border-radius:var(--radius-card);padding:16px;box-shadow:0 1px 4px var(--shadow);border:1.5px solid transparent;transition:all 0.15s;}
+    .totp-card:hover{border-color:var(--primary-container);box-shadow:0 3px 10px var(--shadow);}
+    .totp-card.expiring{border-color:#FF6D00;background:#FFF3E0;}
+    .dark-mode .totp-card.expiring{background:#2A1500;}
+    .totp-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .totp-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+    .totp-issuer{font-weight:600;font-size:14px;color:var(--on-surface);}
+    .totp-account{font-size:11px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;}
+    .totp-code{font-size:26px;font-weight:800;letter-spacing:4px;color:var(--primary);font-variant-numeric:tabular-nums;margin-bottom:10px;}
+    .totp-card.expiring .totp-code{color:#FF6D00;}
+    .totp-progress-wrap{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+    .totp-progress-bar{flex:1;height:5px;background:var(--outline-variant);border-radius:3px;overflow:hidden;}
+    .totp-progress-fill{height:100%;border-radius:3px;background:var(--primary);}
+    .totp-card.expiring .totp-progress-fill{background:#FF6D00;}
+    .totp-timer{font-size:12px;color:var(--on-surface-variant);font-weight:500;white-space:nowrap;}
+    .totp-card.expiring .totp-timer{color:#FF6D00;font-weight:700;}
+    .detail-header{background:var(--card-bg);border-radius:var(--radius-card);padding:20px;display:flex;align-items:center;gap:16px;margin-bottom:12px;box-shadow:0 1px 4px var(--shadow);}
+    .detail-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1976D2,#42A5F5);color:white;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;flex-shrink:0;}
+    .detail-title{font-size:20px;font-weight:700;color:var(--on-surface);}
+    .chip{display:inline-block;background:var(--primary-container);color:var(--primary);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:500;margin-top:4px;}
+    .detail-field{background:var(--card-bg);border-radius:var(--radius-card);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px var(--shadow);}
+    .strength-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:8px;}
+    .strength-bar{flex:1;height:4px;background:var(--outline-variant);border-radius:2px;overflow:hidden;}
+    .strength-fill{height:100%;border-radius:2px;}
+    .strength-fill.strong{background:#2E7D32;width:85%;}
+    .strength-fill.medium{background:#FF6D00;width:55%;}
+    .strength-fill.weak{background:var(--error);width:30%;}
+    .strength-label{font-size:12px;font-weight:600;}
+    .strength-label.strong{color:#2E7D32;}
+    .strength-label.medium{color:#FF6D00;}
+    .strength-label.weak{color:var(--error);}
+    .drawer-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.38);display:flex;justify-content:flex-end;z-index:100;}
+    .drawer{width:300px;height:100%;background:var(--card-bg);border-radius:var(--radius-dialog) 0 0 var(--radius-dialog);padding:20px;overflow-y:auto;box-shadow:-8px 0 32px var(--shadow);}
+    .drawer-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+    .drawer-title{font-size:17px;font-weight:700;color:var(--on-surface);}
+    .slider{width:100%;accent-color:var(--primary);cursor:pointer;}
+    .slider-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--on-surface-variant);margin-top:4px;}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--outline-variant);}
+    .toggle-row:last-of-type{border-bottom:none;}
+    .toggle-label{font-size:14px;color:var(--on-surface);}
+    .toggle{width:44px;height:24px;border-radius:12px;background:var(--outline-variant);position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
+    .toggle.on{background:var(--primary);}
+    .toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+    .toggle.on::after{left:23px;}
+    .generated-pw{background:var(--surface-variant);border:1.5px solid var(--outline-variant);border-radius:var(--radius-input);padding:12px 14px;font-family:monospace;font-size:15px;color:var(--on-surface);margin:10px 0;word-break:break-all;line-height:1.5;}
+    .settings-group{background:var(--card-bg);border-radius:var(--radius-card);overflow:hidden;margin-bottom:14px;box-shadow:0 1px 4px var(--shadow);}
+    .settings-group-title{font-size:12px;font-weight:600;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;padding:12px 16px 4px;}
+    .settings-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--outline-variant);cursor:pointer;transition:background 0.15s;}
+    .settings-row:last-child{border-bottom:none;}
+    .settings-row:hover{background:var(--surface-variant);}
+    .settings-label{font-size:14px;color:var(--on-surface);}
+    .settings-value{font-size:14px;color:var(--on-surface-variant);display:flex;align-items:center;gap:6px;}
+    .radio-group{display:flex;gap:16px;}
+    .radio-option{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--on-surface);cursor:pointer;}
+    .radio-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--outline);display:flex;align-items:center;justify-content:center;transition:border-color 0.2s;flex-shrink:0;}
+    .radio-dot.selected{border-color:var(--primary);}
+    .radio-dot.selected::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--primary);}
+    .segment-control{display:flex;background:var(--surface-variant);border-radius:var(--radius-btn);padding:3px;gap:3px;}
+    .segment-btn{flex:1;padding:8px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;background:transparent;color:var(--on-surface-variant);transition:all 0.2s;}
+    .segment-btn.active{background:var(--primary);color:white;box-shadow:0 1px 4px rgba(25,118,210,0.3);}
+    .fab{position:absolute;bottom:20px;right:20px;width:56px;height:56px;border-radius:28px;background:var(--primary);color:white;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(25,118,210,0.45);display:flex;align-items:center;justify-content:center;transition:all 0.2s;z-index:10;}
+    .fab:hover{box-shadow:0 6px 20px rgba(25,118,210,0.55);transform:scale(1.06);}
+    .theme-toggle-btn{position:fixed;top:20px;right:20px;padding:8px 16px;border-radius:20px;border:2px solid #1976D2;background:white;color:#1976D2;cursor:pointer;font-size:13px;font-weight:500;z-index:1000;transition:all 0.2s;}
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px;}
+    .notice{text-align:center;font-size:12px;color:#888;margin-top:12px;}
+  </style>
+</head>
+<body>
+<button class="theme-toggle-btn" onclick="toggleDark()"><span class="mi" id="theme-icon" style="font-size:16px;">dark_mode</span> <span id="theme-label">暗色模式</span></button>
+<div class="screen-tabs">
+  <button class="screen-tab active" onclick="showScreen('unlock')">① 解锁页</button>
+  <button class="screen-tab" onclick="showScreen('list')">② 主列表</button>
+  <button class="screen-tab" onclick="showScreen('detail')">③ 条目详情</button>
+  <button class="screen-tab" onclick="showScreen('totp')">④ TOTP 总览</button>
+  <button class="screen-tab" onclick="showScreen('generator')">⑤ 密码生成器</button>
+  <button class="screen-tab" onclick="showScreen('settings')">⑥ 设置页</button>
+  <button class="screen-tab" onclick="showScreen('new-entry')">⑦ 新建条目</button>
+</div>
+
+<!-- ① 解锁页 -->
+<div class="app-window center-layout active" id="screen-unlock">
+  <div class="unlock-bg" id="unlock-bg"></div>
+  <div class="unlock-card">
+    <div class="unlock-logo">
+      <div class="logo-circle"><span class="mi" style="font-size:34px;color:white;">lock</span></div>
+      <div class="logo-name">VaultX</div>
+      <div class="logo-sub">本地优先 · 安全可靠的密码管理器</div>
+    </div>
+    <div class="form-group">
+      <div class="input-label">主密码</div>
+      <div class="input-wrap">
+        <input type="password" class="input-field" placeholder="输入主密码..." style="padding-right:48px;">
+        <div class="input-suffix"><button class="btn-icon toggle-pw-btn" style="background:transparent;"><span class="mi" style="font-size:18px;">visibility</span></button></div>
+      </div>
+    </div>
+    <div class="error-msg">⚠ 密码不正确，还剩 <strong>3</strong> 次尝试机会</div><br>
+    <button class="btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;" onclick="showScreen('list')"><span class="mi" style="font-size:18px;vertical-align:middle;">lock_open</span> 解　锁</button>
+    <button class="btn-outlined" style="width:100%;justify-content:center;"><span class="mi" style="font-size:18px;vertical-align:middle;">add_circle</span> 创建新金库</button>
+  </div>
+</div>
+
+<!-- ② 主列表 -->
+<div class="app-window" id="screen-list">
+  <div class="topbar">
+    <span class="mi" style="font-size:26px;flex-shrink:0;">lock</span>
+    <div class="search-wrap"><span class="search-icon"><span class="mi" style="font-size:16px;">search</span></span><input type="text" class="topbar-search" placeholder="搜索条目..."></div>
+    <button class="icon-btn" onclick="showScreen('new-entry')"><span class="mi" style="font-size:20px;">add</span></button>
+    <button class="icon-btn" onclick="showScreen('settings')"><span class="mi" style="font-size:20px;">settings</span></button>
+    <button class="icon-btn" onclick="showScreen('unlock')"><span class="mi" style="font-size:20px;">lock</span></button>
+  </div>
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section"><div class="sidebar-item active"><span class="mi" style="font-size:16px;">folder_open</span>全部条目<span class="sidebar-badge">28</span></div></div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">类型</div>
+        <div class="sidebar-item"><span class="mi" style="font-size:16px;">key</span>密码<span class="sidebar-badge">19</span></div>
+        <div class="sidebar-item" onclick="showScreen('totp')"><span class="mi" style="font-size:16px;">phonelink_lock</span>TOTP<span class="sidebar-badge">9</span></div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">分类</div>
+        <div class="sidebar-item"><span class="mi" style="font-size:16px;">work</span>工作<span class="sidebar-badge">5</span></div>
+        <div class="sidebar-item"><span class="mi" style="font-size:16px;">person</span>个人<span class="sidebar-badge">14</span></div>
+        <div class="sidebar-item"><span class="mi" style="font-size:16px;">account_balance</span>金融<span class="sidebar-badge">4</span></div>
+        <div class="sidebar-item"><span class="mi" style="font-size:16px;">shopping_cart</span>购物<span class="sidebar-badge">5</span></div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- GitHub: 密码+TOTP 同时拥有 -->
+      <div class="entry-card">
+        <div class="entry-card-header" onclick="showScreen('detail')">
+          <div class="entry-avatar">G</div>
+          <div class="entry-info"><div class="entry-title">GitHub <small style="font-size:11px;font-weight:400;opacity:0.65;"><span class="mi" style="font-size:12px;">key</span> <span class="mi" style="font-size:12px;">phonelink_lock</span></small></div><div class="entry-sub">github.com</div></div>
+          <div class="entry-time">2小时前</div><span style="color:var(--outline);font-size:18px;margin-left:4px;">›</span>
+        </div>
+        <div class="entry-fields">
+          <div class="entry-field-row"><span class="mi field-lbl" style="font-size:15px;">phonelink_lock</span><span class="field-val totp-inline">482 917</span><div class="totp-mini-wrap"><div class="totp-mini-bar"><div class="totp-mini-fill" style="width:60%;"></div></div><span class="totp-mini-timer">18s</span></div><button class="btn-copy-icon copy-btn" data-copy="482917"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          <div class="entry-field-row-split">
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">person</span><span class="field-val">oehjio@example.com</span><button class="btn-copy-icon copy-btn" data-copy="oehjio@example.com"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">key</span><span class="field-val mono pw-mask-el">••••••••••••••</span><button class="btn-eye-mini toggle-list-pw" data-pw="tK9#mZ2@pL5!xQR"><span class="mi" style="font-size:14px;">visibility</span></button><button class="btn-copy-icon copy-btn" data-copy="tK9#mZ2@pL5!xQR"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          </div>
+        </div>
+      </div>
+      <!-- Google: 仅密码 -->
+      <div class="entry-card">
+        <div class="entry-card-header">
+          <div class="entry-avatar" style="background:#DB4437;">G</div>
+          <div class="entry-info"><div class="entry-title">Google <small style="font-size:11px;font-weight:400;opacity:0.65;"><span class="mi" style="font-size:12px;">key</span></small></div><div class="entry-sub">accounts.google.com</div></div>
+          <div class="entry-time">昨天</div><span style="color:var(--outline);font-size:18px;margin-left:4px;">›</span>
+        </div>
+        <div class="entry-fields">
+          <div class="entry-field-row-split">
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">person</span><span class="field-val">test@gmail.com</span><button class="btn-copy-icon copy-btn" data-copy="test@gmail.com"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">key</span><span class="field-val mono pw-mask-el">••••••••••••</span><button class="btn-eye-mini toggle-list-pw" data-pw="Gx8!pQ3rYm2#"><span class="mi" style="font-size:14px;">visibility</span></button><button class="btn-copy-icon copy-btn" data-copy="Gx8!pQ3rYm2#"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          </div>
+        </div>
+      </div>
+      <!-- AWS: 密码+TOTP -->
+      <div class="entry-card">
+        <div class="entry-card-header">
+          <div class="entry-avatar" style="background:#FF9900;">A</div>
+          <div class="entry-info"><div class="entry-title">AWS Console <small style="font-size:11px;font-weight:400;opacity:0.65;"><span class="mi" style="font-size:12px;">key</span> <span class="mi" style="font-size:12px;">phonelink_lock</span></small></div><div class="entry-sub">console.aws.amazon.com</div></div>
+          <div class="entry-time">3天前</div><span style="color:var(--outline);font-size:18px;margin-left:4px;">›</span>
+        </div>
+        <div class="entry-fields">
+          <div class="entry-field-row"><span class="mi field-lbl" style="font-size:15px;">phonelink_lock</span><span class="field-val totp-inline">103 445</span><div class="totp-mini-wrap"><div class="totp-mini-bar"><div class="totp-mini-fill" style="width:73%;"></div></div><span class="totp-mini-timer">22s</span></div><button class="btn-copy-icon copy-btn" data-copy="103445"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          <div class="entry-field-row-split">
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">person</span><span class="field-val">admin@company.com</span><button class="btn-copy-icon copy-btn" data-copy="admin@company.com"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">key</span><span class="field-val mono pw-mask-el">••••••••••••••••</span><button class="btn-eye-mini toggle-list-pw" data-pw="Aws#R7kP!9mL2xZ"><span class="mi" style="font-size:14px;">visibility</span></button><button class="btn-copy-icon copy-btn" data-copy="Aws#R7kP!9mL2xZ"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          </div>
+        </div>
+      </div>
+      <!-- Notion: 仅密码 -->
+      <div class="entry-card">
+        <div class="entry-card-header">
+          <div class="entry-avatar" style="background:#333;">N</div>
+          <div class="entry-info"><div class="entry-title">Notion <small style="font-size:11px;font-weight:400;opacity:0.65;"><span class="mi" style="font-size:12px;">key</span></small></div><div class="entry-sub">notion.so</div></div>
+          <div class="entry-time">1周前</div><span style="color:var(--outline);font-size:18px;margin-left:4px;">›</span>
+        </div>
+        <div class="entry-fields">
+          <div class="entry-field-row-split">
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">person</span><span class="field-val">me@notion.so</span><button class="btn-copy-icon copy-btn" data-copy="me@notion.so"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">key</span><span class="field-val mono pw-mask-el">•••••••••••</span><button class="btn-eye-mini toggle-list-pw" data-pw="Nt3#jK8!mPw"><span class="mi" style="font-size:14px;">visibility</span></button><button class="btn-copy-icon copy-btn" data-copy="Nt3#jK8!mPw"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          </div>
+        </div>
+      </div>
+      <!-- Discord: 密码+TOTP -->
+      <div class="entry-card">
+        <div class="entry-card-header">
+          <div class="entry-avatar" style="background:#6C5CE7;">D</div>
+          <div class="entry-info"><div class="entry-title">Discord <small style="font-size:11px;font-weight:400;opacity:0.65;"><span class="mi" style="font-size:12px;">key</span> <span class="mi" style="font-size:12px;">phonelink_lock</span></small></div><div class="entry-sub">discord.com</div></div>
+          <div class="entry-time">2周前</div><span style="color:var(--outline);font-size:18px;margin-left:4px;">›</span>
+        </div>
+        <div class="entry-fields">
+          <div class="entry-field-row"><span class="mi field-lbl" style="font-size:15px;">phonelink_lock</span><span class="field-val totp-inline">291 847</span><div class="totp-mini-wrap"><div class="totp-mini-bar"><div class="totp-mini-fill" style="width:40%;"></div></div><span class="totp-mini-timer">12s</span></div><button class="btn-copy-icon copy-btn" data-copy="291847"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          <div class="entry-field-row-split">
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">person</span><span class="field-val">user123</span><button class="btn-copy-icon copy-btn" data-copy="user123"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+            <div class="field-half"><span class="mi field-lbl" style="font-size:15px;">key</span><span class="field-val mono pw-mask-el">•••••••••••••</span><button class="btn-eye-mini toggle-list-pw" data-pw="Dc7!vN3@qPr9"><span class="mi" style="font-size:14px;">visibility</span></button><button class="btn-copy-icon copy-btn" data-copy="Dc7!vN3@qPr9"><span class="mi" style="font-size:14px;">content_copy</span></button></div>
+          </div>
+        </div>
+      </div>
+      <div style="height:70px;"></div>
+    </div>
+  </div>
+  <button class="fab" onclick="showScreen('new-entry')"><span class="mi" style="font-size:28px;">add</span></button>
+</div>
+
+<!-- ③ 条目详情 -->
+<div class="app-window" id="screen-detail">
+  <div class="topbar"><button class="topbar-back" onclick="showScreen('list')"><span class="mi">arrow_back</span></button><span class="topbar-title">条目详情</span><button class="icon-btn"><span class="mi" style="font-size:18px;">edit</span></button><button class="icon-btn" style="color:#FF8A80;"><span class="mi" style="font-size:18px;">delete</span></button></div>
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section"><div class="sidebar-item"><span class="mi" style="font-size:16px;">folder_open</span>全部条目<span class="sidebar-badge">28</span></div></div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section"><div class="sidebar-item active"><span class="mi" style="font-size:16px;">key</span>密码<span class="sidebar-badge">19</span></div><div class="sidebar-item"><span class="mi" style="font-size:16px;">phonelink_lock</span>TOTP<span class="sidebar-badge">9</span></div></div>
+    </div>
+    <div class="content">
+      <div class="detail-header"><div class="detail-avatar">G</div><div><div class="detail-title">GitHub</div><span class="chip"><span class="mi" style="font-size:12px;">work</span> 工作</span></div></div>
+      <div class="detail-field"><div class="input-label">网址</div><div class="input-wrap"><input class="input-field" readonly value="https://github.com" style="padding-right:80px;"><div class="input-suffix"><button class="btn-copy btn-sm copy-btn">复制</button></div></div></div>
+      <div class="detail-field"><div class="input-label">用户名</div><div class="input-wrap"><input class="input-field" readonly value="oehjio@example.com" style="padding-right:80px;"><div class="input-suffix"><button class="btn-copy btn-sm copy-btn">复制</button></div></div></div>
+      <div class="detail-field">
+        <div class="input-label">密码</div>
+        <div class="input-wrap"><input class="input-field pw-field" type="password" readonly value="tK9#mZ2@pL5!xQR" style="padding-right:130px;"><div class="input-suffix"><button class="btn-icon toggle-pw-btn"><span class="mi" style="font-size:18px;">visibility</span></button><button class="btn-copy btn-sm copy-btn copied">✓ 已复制</button></div></div>
+        <div class="strength-bar-wrap"><div class="strength-bar"><div class="strength-fill strong"></div></div><span class="strength-label strong">强 ✓</span></div>
+      </div>
+      <div class="detail-field">
+        <div class="input-label" style="display:flex;align-items:center;justify-content:space-between;"><span><span class="mi" style="font-size:15px;vertical-align:middle;">phonelink_lock</span> TOTP 验证码</span><button class="btn-copy btn-sm copy-btn" data-copy="735291">复制</button></div>
+        <div style="margin-top:10px;">
+          <div style="font-family:'Roboto Mono',monospace;font-size:32px;font-weight:800;letter-spacing:6px;color:var(--primary);font-variant-numeric:tabular-nums;">735 291</div>
+          <div class="totp-progress-wrap" style="margin-top:8px;"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:57%;"></div></div><span class="totp-timer">17s</span></div>
+        </div>
+      </div>
+      <div class="detail-field"><div class="input-label">备注</div><div style="color:var(--on-surface-variant);font-size:14px;padding:4px 0;">（无备注）</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ TOTP 总览 -->
+<div class="app-window" id="screen-totp">
+  <div class="topbar"><button class="topbar-back" onclick="showScreen('list')"><span class="mi">arrow_back</span></button><span class="topbar-title">TOTP 验证码</span><button class="icon-btn"><span class="mi" style="font-size:20px;">add</span></button><button class="icon-btn" onclick="showScreen('settings')"><span class="mi" style="font-size:20px;">settings</span></button><button class="icon-btn" onclick="toggleDark()"><span class="mi" style="font-size:20px;">dark_mode</span></button></div>
+  <div class="content">
+    <div class="totp-grid">
+      <div class="totp-card"><div class="totp-header"><div class="totp-avatar" style="background:#DB4437;">G</div><div><div class="totp-issuer">Google</div><div class="totp-account">test@gmail.com</div></div></div><div class="totp-code">482 917</div><div class="totp-progress-wrap"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:60%;"></div></div><span class="totp-timer">18s</span></div><button class="btn-copy btn-sm copy-btn" style="width:100%;text-align:center;padding:7px;">复制</button></div>
+      <div class="totp-card"><div class="totp-header"><div class="totp-avatar" style="background:#FF9900;">A</div><div><div class="totp-issuer">AWS</div><div class="totp-account">admin@company.com</div></div></div><div class="totp-code">103 445</div><div class="totp-progress-wrap"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:73%;"></div></div><span class="totp-timer">22s</span></div><button class="btn-copy btn-sm copy-btn" style="width:100%;text-align:center;padding:7px;">复制</button></div>
+      <div class="totp-card"><div class="totp-header"><div class="totp-avatar">G</div><div><div class="totp-issuer">GitHub</div><div class="totp-account">oehjio@example.com</div></div></div><div class="totp-code">735 291</div><div class="totp-progress-wrap"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:17%;"></div></div><span class="totp-timer">5s</span></div><button class="btn-copy btn-sm copy-btn" style="width:100%;text-align:center;padding:7px;">复制</button></div>
+      <div class="totp-card expiring"><div class="totp-header"><div class="totp-avatar" style="background:#333;">N</div><div><div class="totp-issuer">Notion</div><div class="totp-account">me@notion.so</div></div><span class="mi" style="font-size:18px;color:#FF6D00;margin-left:auto;">warning</span></div><div class="totp-code">006 183</div><div class="totp-progress-wrap"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:97%;"></div></div><span class="totp-timer">29s</span></div><button class="btn-copy btn-sm copy-btn" style="width:100%;text-align:center;padding:7px;">复制</button></div>
+      <div class="totp-card"><div class="totp-header"><div class="totp-avatar" style="background:#6C5CE7;">D</div><div><div class="totp-issuer">Discord</div><div class="totp-account">user123</div></div></div><div class="totp-code">291 847</div><div class="totp-progress-wrap"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:40%;"></div></div><span class="totp-timer">12s</span></div><button class="btn-copy btn-sm copy-btn" style="width:100%;text-align:center;padding:7px;">复制</button></div>
+      <div class="totp-card"><div class="totp-header"><div class="totp-avatar" style="background:#00B0FF;">T</div><div><div class="totp-issuer">Twitter / X</div><div class="totp-account">@myhandle</div></div></div><div class="totp-code">583 024</div><div class="totp-progress-wrap"><div class="totp-progress-bar"><div class="totp-progress-fill" style="width:85%;"></div></div><span class="totp-timer">25s</span></div><button class="btn-copy btn-sm copy-btn" style="width:100%;text-align:center;padding:7px;">复制</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 密码生成器（抽屉） -->
+<div class="app-window" id="screen-generator">
+  <div class="topbar"><button class="topbar-back" onclick="showScreen('detail')"><span class="mi">arrow_back</span></button><span class="topbar-title">条目详情</span><button class="icon-btn"><span class="mi" style="font-size:18px;">edit</span></button></div>
+  <div class="main-layout" style="position:relative;">
+    <div class="sidebar">
+      <div class="sidebar-section"><div class="sidebar-item"><span class="mi" style="font-size:16px;">folder_open</span>全部条目<span class="sidebar-badge">28</span></div></div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section"><div class="sidebar-item active"><span class="mi" style="font-size:16px;">key</span>密码<span class="sidebar-badge">19</span></div><div class="sidebar-item"><span class="mi" style="font-size:16px;">phonelink_lock</span>TOTP<span class="sidebar-badge">9</span></div></div>
+    </div>
+    <div class="content" style="filter:blur(2px);pointer-events:none;opacity:0.6;">
+      <div class="detail-header"><div class="detail-avatar">G</div><div><div class="detail-title">GitHub</div><span class="chip"><span class="mi" style="font-size:12px;">work</span> 工作</span></div></div>
+      <div class="detail-field"><div class="input-label">密码</div><input class="input-field" type="password" readonly value="tK9#mZ2@pL5!xQR"></div>
+    </div>
+    <div class="drawer-overlay" style="position:absolute;">
+      <div class="drawer">
+        <div class="drawer-header"><span class="drawer-title"><span class="mi" style="font-size:18px;vertical-align:middle;">casino</span> 密码生成器</span><button class="btn-icon" onclick="showScreen('detail')"><span class="mi" style="font-size:18px;">close</span></button></div>
+        <div class="form-group">
+          <div class="input-label">长度：<strong id="len-display">16</strong> 位</div>
+          <input type="range" class="slider" min="8" max="64" value="16" oninput="document.getElementById('len-display').textContent=this.value;genPw();" style="width:100%;">
+          <div class="slider-labels"><span>8</span><span>64</span></div>
+        </div>
+        <div class="form-group">
+          <div class="input-label">字符集</div>
+          <div class="toggle-row"><span class="toggle-label">大写字母 A-Z</span><div class="toggle on" onclick="this.classList.toggle('on');genPw();"></div></div>
+          <div class="toggle-row"><span class="toggle-label">小写字母 a-z</span><div class="toggle on" onclick="this.classList.toggle('on');genPw();"></div></div>
+          <div class="toggle-row"><span class="toggle-label">数字 0-9</span><div class="toggle on" onclick="this.classList.toggle('on');genPw();"></div></div>
+          <div class="toggle-row"><span class="toggle-label">特殊符号 !@#$%</span><div class="toggle on" onclick="this.classList.toggle('on');genPw();"></div></div>
+          <div class="toggle-row"><span class="toggle-label">排除歧义字符 O0lI1</span><div class="toggle" onclick="this.classList.toggle('on');genPw();"></div></div>
+        </div>
+        <div class="input-label">预览</div>
+        <div class="generated-pw" id="pw-preview">tK9#mZ2@pL5!xQR&</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn-outlined btn-sm" style="flex:1;" onclick="genPw()"><span class="mi" style="font-size:16px;vertical-align:middle;">refresh</span> 刷新</button>
+          <button class="btn-copy" style="flex:1;padding:8px;" id="gen-copy-btn" onclick="copyGenPw()">复制</button>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;"><span class="mi" style="font-size:16px;">check</span> 使用此密码</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ 设置页 -->
+<div class="app-window" id="screen-settings">
+  <div class="topbar"><button class="topbar-back" onclick="showScreen('list')"><span class="mi">arrow_back</span></button><span class="topbar-title">设置</span></div>
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section"><div class="sidebar-item"><span class="mi" style="font-size:16px;">folder_open</span>全部条目<span class="sidebar-badge">28</span></div></div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section"><div class="sidebar-item"><span class="mi" style="font-size:16px;">key</span>密码<span class="sidebar-badge">19</span></div><div class="sidebar-item"><span class="mi" style="font-size:16px;">phonelink_lock</span>TOTP<span class="sidebar-badge">9</span></div></div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section"><div class="sidebar-item active"><span class="mi" style="font-size:16px;">settings</span>设置</div></div>
+    </div>
+    <div class="content">
+      <div class="settings-group">
+        <div class="settings-group-title"><span class="mi" style="font-size:15px;vertical-align:middle;">lock</span> 安全</div>
+        <div class="settings-row"><span class="settings-label">修改主密码</span><span class="settings-value">›</span></div>
+        <div class="settings-row"><span class="settings-label">自动锁定</span><span class="settings-value">5 分钟 ▾</span></div>
+        <div class="settings-row"><span class="settings-label">剪贴板清除延迟</span><span class="settings-value">30 秒 ▾</span></div>
+        <div class="settings-row"><span class="settings-label">密码错误最大次数</span><span class="settings-value">5 次 ▾</span></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title"><span class="mi" style="font-size:15px;vertical-align:middle;">palette</span> 外观</div>
+        <div class="settings-row" style="cursor:default;"><span class="settings-label">主题</span><div class="radio-group"><label class="radio-option"><div class="radio-dot selected"></div>亮色</label><label class="radio-option"><div class="radio-dot"></div>暗色</label><label class="radio-option"><div class="radio-dot"></div>跟随系统</label></div></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title"><span class="mi" style="font-size:15px;vertical-align:middle;">save</span> 数据管理</div>
+        <div class="settings-row"><span class="settings-label">导出加密备份 (.vaultx)</span><button class="btn-primary btn-sm">导出</button></div>
+        <div class="settings-row"><span class="settings-label">导入备份文件</span><button class="btn-outlined btn-sm">导入</button></div>
+        <div class="settings-row"><span class="settings-label" style="color:var(--error);"><span class="mi" style="font-size:15px;vertical-align:middle;">warning</span> 导出明文 JSON（危险操作）</span><button class="btn-danger btn-sm">导出</button></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title"><span class="mi" style="font-size:15px;vertical-align:middle;">info</span> 关于</div>
+        <div class="settings-row" style="cursor:default;"><span class="settings-label">版本</span><span class="settings-value">VaultX v1.0.0</span></div>
+        <div class="settings-row" style="cursor:default;"><span class="settings-label">加密算法</span><span class="settings-value">AES-256-GCM + Argon2id</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ 新建条目 -->
+<div class="app-window" id="screen-new-entry">
+  <div class="topbar"><button class="topbar-back" onclick="showScreen('list')"><span class="mi">close</span></button><span class="topbar-title">新建条目</span><button class="btn-primary btn-sm" style="margin-left:auto;"><span class="mi" style="font-size:15px;">save</span> 保存</button></div>
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section"><div class="sidebar-item"><span class="mi" style="font-size:16px;">folder_open</span>全部条目<span class="sidebar-badge">28</span></div></div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section"><div class="sidebar-item"><span class="mi" style="font-size:16px;">key</span>密码<span class="sidebar-badge">19</span></div><div class="sidebar-item"><span class="mi" style="font-size:16px;">phonelink_lock</span>TOTP<span class="sidebar-badge">9</span></div></div>
+    </div>
+    <div class="content">
+      <div class="form-group"><div class="input-label">标题 <span style="color:var(--error);">*</span></div><input class="input-field" placeholder="例如：GitHub"></div>
+      <!-- 密码区块：独立开关，默认开启 -->
+      <div class="form-section">
+        <div class="form-section-header" onclick="toggleSection('pw-section','pw-toggle')">
+          <span class="form-section-title"><span class="mi" style="font-size:16px;vertical-align:middle;">key</span> 密码</span>
+          <div class="toggle on" id="pw-toggle" onclick="event.stopPropagation();toggleSection('pw-section','pw-toggle');"></div>
+        </div>
+        <div class="form-section-body" id="pw-section">
+          <div class="form-group"><div class="input-label">网址</div><input class="input-field" placeholder="https://example.com"></div>
+          <div class="form-group"><div class="input-label">用户名 / 邮箱</div><input class="input-field" placeholder="user@example.com"></div>
+          <div class="form-group">
+            <div class="input-label">密码</div>
+            <div class="input-wrap"><input class="input-field pw-field" type="password" placeholder="输入或生成密码" value="tK9#mZ2@pL5!" style="padding-right:120px;"><div class="input-suffix"><button class="btn-icon toggle-pw-btn"><span class="mi" style="font-size:18px;">visibility</span></button><button class="btn-copy btn-sm" onclick="showScreen('generator')" style="white-space:nowrap;"><span class="mi" style="font-size:14px;vertical-align:middle;">bolt</span> 生成</button></div></div>
+            <div class="strength-bar-wrap"><div class="strength-bar"><div class="strength-fill strong"></div></div><span class="strength-label strong">强 ✓</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- TOTP 区块：独立开关，默认关闭；可与密码同时开启 -->
+      <div class="form-section">
+        <div class="form-section-header" onclick="toggleSection('totp-section','totp-toggle')">
+          <span class="form-section-title"><span class="mi" style="font-size:16px;vertical-align:middle;">phonelink_lock</span> TOTP 双因素验证</span>
+          <div class="toggle" id="totp-toggle" onclick="event.stopPropagation();toggleSection('totp-section','totp-toggle');"></div>
+        </div>
+        <div class="form-section-body hidden" id="totp-section">
+          <div class="form-group"><div class="input-label">密钥 (Secret) <span style="color:var(--error);">*</span></div><input class="input-field" placeholder="JBSWY3DPEHPK3PXP"></div>
+          <div class="form-group"><div class="input-label">发行方 (Issuer)</div><input class="input-field" placeholder="例如：Google"></div>
+          <div class="form-group"><div class="input-label">账号</div><input class="input-field" placeholder="user@example.com"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="input-label">分类</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="chip" style="cursor:pointer;"><span class="mi" style="font-size:12px;">work</span> 工作</span>
+          <span class="chip" style="cursor:pointer;background:var(--surface-variant);color:var(--on-surface-variant);"><span class="mi" style="font-size:12px;">person</span> 个人</span>
+          <span class="chip" style="cursor:pointer;background:var(--surface-variant);color:var(--on-surface-variant);"><span class="mi" style="font-size:12px;">account_balance</span> 金融</span>
+          <span class="chip" style="cursor:pointer;background:var(--surface-variant);color:var(--on-surface-variant);"><span class="mi" style="font-size:12px;">add</span> 新分类</span>
+        </div>
+      </div>
+      <div class="form-group"><div class="input-label">备注</div><textarea class="input-field" style="height:72px;padding:10px;resize:none;" placeholder="可选备注..."></textarea></div>
+    </div>
+  </div>
+</div>
+
+<p class="notice">VaultX UI Mockup v1.0 · 点击顶部标签切换页面 · 支持暗色模式 · 部分按钮可交互跳转</p>
+
+<script>
+  const screenOrder=['unlock','list','detail','totp','generator','settings','new-entry'];
+  function showScreen(id){
+    document.querySelectorAll('.app-window').forEach(w=>w.classList.remove('active'));
+    document.querySelectorAll('.screen-tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('screen-'+id).classList.add('active');
+    const idx=screenOrder.indexOf(id);
+    if(idx>=0)document.querySelectorAll('.screen-tab')[idx].classList.add('active');
+  }
+  function toggleDark(){
+    const isDark=document.body.classList.toggle('dark-mode');
+    document.getElementById('theme-icon').textContent=isDark?'light_mode':'dark_mode';
+    document.getElementById('theme-label').textContent=isDark?'亮色模式':'暗色模式';
+    const bg=document.getElementById('unlock-bg');
+    if(bg)bg.style.background=isDark
+      ?'linear-gradient(135deg,#0D1B2A 0%,#121212 60%,#0A1F0A 100%)'
+      :'linear-gradient(135deg,#E3F2FD 0%,#FAFAFA 60%,#E8F5E9 100%)';
+  }
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest('.copy-btn');
+    if(!btn||btn.innerHTML.includes('✓')||btn.innerHTML.includes('bolt'))return;
+    const val=btn.dataset.copy;
+    if(val)navigator.clipboard.writeText(val).catch(()=>{});
+    const isIcon=btn.classList.contains('btn-copy-icon');
+    const orig=btn.innerHTML;
+    btn.innerHTML=isIcon?'✓':'✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove('copied');},2000);
+  });
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest('.toggle-pw-btn');
+    if(!btn)return;
+    const field=btn.closest('.input-wrap')?.querySelector('.pw-field');
+    if(!field)return;
+    const isPassword=field.type==='password';
+    field.type=isPassword?'text':'password';
+    btn.innerHTML=isPassword?'<span class="mi" style="font-size:18px;">visibility_off</span>':'<span class="mi" style="font-size:18px;">visibility</span>';
+  });
+  document.addEventListener('click',function(e){
+    const btn=e.target.closest('.toggle-list-pw');
+    if(!btn)return;
+    const row=btn.closest('.entry-field-row,.field-half');
+    const valEl=row?.querySelector('.pw-mask-el');
+    if(!valEl)return;
+    const isHidden=valEl.textContent.includes('•');
+    valEl.textContent=isHidden?(btn.dataset.pw||''):'••••••••••••••';
+    btn.innerHTML=isHidden?'<span class="mi" style="font-size:14px;">visibility_off</span>':'<span class="mi" style="font-size:14px;">visibility</span>';
+  });
+  function genPw(){
+    const len=parseInt(document.querySelector('#screen-generator .slider').value);
+    const t=document.querySelectorAll('#screen-generator .toggle');
+    let c='';
+    if(t[0].classList.contains('on'))c+='ABCDEFGHJKLMNPQRSTUVWXYZ';
+    if(t[1].classList.contains('on'))c+='abcdefghjkmnpqrstuvwxyz';
+    if(t[2].classList.contains('on'))c+='23456789';
+    if(t[3].classList.contains('on'))c+='!@#$%^&*';
+    if(!t[4].classList.contains('on')){
+      if(t[0].classList.contains('on'))c+='IO';
+      if(t[1].classList.contains('on'))c+='lo';
+      if(t[2].classList.contains('on'))c+='01';
+    }
+    if(!c)c='abcdefghijklmnopqrstuvwxyz';
+    let pw='';
+    for(let i=0;i<len;i++)pw+=c[Math.floor(Math.random()*c.length)];
+    document.getElementById('pw-preview').textContent=pw;
+  }
+  function copyGenPw(){
+    navigator.clipboard.writeText(document.getElementById('pw-preview').textContent).catch(()=>{});
+    const btn=document.getElementById('gen-copy-btn'),orig=btn.textContent;
+    btn.textContent='✓ 已复制';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2000);
+  }
+  function toggleSection(sectionId,toggleId){
+    const section=document.getElementById(sectionId);
+    const toggle=document.getElementById(toggleId);
+    const isOn=toggle.classList.contains('on');
+    toggle.classList.toggle('on');
+    section.classList.toggle('hidden',isOn);
+  }
+</script>
+</body>
+</html>

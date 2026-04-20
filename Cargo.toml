@@ -1,0 +1,32 @@
+[workspace]
+members = [
+    "vaultx-core",
+    "vaultx-ui",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["VaultX Contributors"]
+license = "MIT"
+
+[workspace.dependencies]
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 加密
+aes-gcm = "0.10"
+argon2 = "0.5"
+
+# 内存安全
+zeroize = { version = "1", features = ["derive"] }
+secrecy = { version = "0.8", features = ["serde"] }
+
+# 工具
+uuid = { version = "1", features = ["v4", "serde"] }
+rand = "0.8"
+base64 = "0.22"
+thiserror = "1"
+chrono = { version = "0.4", features = ["serde"] }

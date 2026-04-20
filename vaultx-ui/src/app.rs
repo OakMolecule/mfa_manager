@@ -1,0 +1,631 @@
+use crate::screens::{
+    detail::DetailScreen, generator::GeneratorScreen, list::ListScreen, new_entry::NewEntryScreen,
+    settings::SettingsScreen, totp_view::TotpViewScreen, unlock::UnlockScreen,
+};
+use iced::{Element, Subscription, Task, Theme};
+use secrecy::SecretString;
+use std::path::PathBuf;
+use vaultx_core::{vault::VaultError, Vault};
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+/// 应用程序主题偏好
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ThemePreference {
+    #[default]
+    Light,
+    Dark,
+    System,
+}
+
+/// 应用程序全局状态
+pub struct VaultApp {
+    /// 当前显示的屏幕
+    screen: Screen,
+    /// 金库（解锁后持有）
+    vault: Option<Vault>,
+    /// 解锁异步任务完成后暂存 Vault 的共享槽
+    pending_vault: std::sync::Arc<std::sync::Mutex<Option<Vault>>>,
+    /// 当前金库文件路径
+    vault_path: Option<PathBuf>,
+    /// 主题偏好
+    theme_pref: ThemePreference,
+    /// 密码错误次数（用于退避锁定）
+    error_count: u32,
+    /// 退避锁定解除时间（Unix 秒）
+    lockout_until: Option<u64>,
+    /// 最后活动时间（Unix 秒）
+    last_activity: u64,
+    /// 自动锁定超时（秒），0 = 禁用
+    auto_lock_timeout: u64,
+    /// 上次复制内容到剪贴板的时间（Unix 秒），用于自动清除
+    clipboard_copied_at: Option<u64>,
+}
+
+/// 屏幕枚举
+#[derive(Debug, Clone)]
+pub enum Screen {
+    Unlock(UnlockScreen),
+    List(ListScreen),
+    Detail(DetailScreen),
+    TotpView(TotpViewScreen),
+    Generator(GeneratorScreen),
+    Settings(SettingsScreen),
+    NewEntry(NewEntryScreen),
+}
+
+/// 全局消息枚举
+#[derive(Debug, Clone)]
+pub enum Message {
+    // ── 解锁 ──────────────────────────────────────────────────
+    PasswordChanged(String),
+    UnlockPressed,
+    CreateVaultPressed,
+    UnlockSuccess,
+    UnlockFailed(String),
+
+    // ── 导航 ──────────────────────────────────────────────────
+    NavigateTo(NavigationTarget),
+    GoBack,
+
+    // ── 列表 ──────────────────────────────────────────────────
+    SearchChanged(String),
+    CopyToClipboard(String),
+    TogglePasswordVisible(uuid::Uuid),
+    TotpTick,
+
+    // ── 条目操作 ───────────────────────────────────────────────
+    SelectEntry(uuid::Uuid),
+    DeleteEntry(uuid::Uuid),
+    SaveEntry,
+
+    // ── 主题 ──────────────────────────────────────────────────
+    SetTheme(ThemePreference),
+    SetAutoLockTimeout(u64),
+
+    // ── 新建条目 ───────────────────────────────────────────────
+    NewEntryTitleChanged(String),
+    NewEntryUsernameChanged(String),
+    NewEntryPasswordChanged(String),
+    NewEntryUrlChanged(String),
+    NewEntryToggleShowPassword,
+    NewEntryToggleTotp,
+    NewEntryTotpSecretChanged(String),
+    NewEntryTotpIssuerChanged(String),
+
+    // ── 生成器 ────────────────────────────────────────────────
+    GeneratePassword,
+    GeneratorLengthChanged(u8),
+    GeneratorToggleUppercase,
+    GeneratorToggleLowercase,
+    GeneratorToggleDigits,
+    GeneratorToggleSymbols,
+    GeneratorToggleAmbiguous,
+
+    // ── 系统 ──────────────────────────────────────────────────
+    LockVault,
+    Noop,
+}
+
+#[derive(Debug, Clone)]
+pub enum NavigationTarget {
+    List,
+    Detail(uuid::Uuid),
+    TotpView,
+    Generator,
+    Settings,
+    NewEntry,
+}
+
+impl VaultApp {
+    pub fn new() -> (Self, Task<Message>) {
+        let vault_path = default_vault_path();
+        let screen = if vault_path.as_ref().map_or(false, |p| p.exists()) {
+            Screen::Unlock(UnlockScreen::default())
+        } else {
+            Screen::Unlock(UnlockScreen::new_vault_mode())
+        };
+
+        (
+            Self {
+                screen,
+                vault: None,
+                pending_vault: Default::default(),
+                vault_path,
+                theme_pref: ThemePreference::Light,
+                error_count: 0,
+                lockout_until: None,
+                last_activity: now_secs(),
+                auto_lock_timeout: 300, // 默认 5 分钟
+                clipboard_copied_at: None,
+            },
+            Task::none(),
+        )
+    }
+
+    pub fn title(&self) -> String {
+        "VaultX — 密码管理器".to_string()
+    }
+
+    pub fn theme(&self) -> Theme {
+        match self.theme_pref {
+            ThemePreference::Dark => Theme::Dark,
+            _ => Theme::Light,
+        }
+    }
+
+    pub fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::PasswordChanged(pw) => {
+                if let Screen::Unlock(s) = &mut self.screen {
+                    s.password = pw;
+                }
+                Task::none()
+            }
+            Message::UnlockPressed => {
+                let Screen::Unlock(s) = &mut self.screen else {
+                    return Task::none();
+                };
+                if s.password.is_empty() {
+                    s.error_message = Some("请输入主密码".to_string());
+                    return Task::none();
+                }
+                if let Some(until) = self.lockout_until {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
+                    if now < until {
+                        s.error_message = Some(format!("多次错误，请 {} 秒后重试", until - now));
+                        return Task::none();
+                    }
+                }
+                s.is_loading = true;
+                s.error_message = None;
+                let password = SecretString::new(s.password.clone().into());
+                let vault_path = self.vault_path.clone();
+                let slot = self.pending_vault.clone();
+                Task::perform(
+                    async move {
+                        tokio::task::spawn_blocking(move || match &vault_path {
+                            Some(path) => {
+                                let mut v = Vault::open(path)?;
+                                v.unlock(&password)?;
+                                *slot.lock().unwrap() = Some(v);
+                                Ok::<(), VaultError>(())
+                            }
+                            None => Err(VaultError::Io(std::io::Error::new(
+                                std::io::ErrorKind::NotFound,
+                                "未找到金库路径",
+                            ))),
+                        })
+                        .await
+                        .unwrap_or_else(|e| {
+                            Err(VaultError::Io(std::io::Error::other(e.to_string())))
+                        })
+                    },
+                    |result| match result {
+                        Ok(()) => Message::UnlockSuccess,
+                        Err(e) => Message::UnlockFailed(e.to_string()),
+                    },
+                )
+            }
+            Message::CreateVaultPressed => {
+                let Screen::Unlock(s) = &mut self.screen else {
+                    return Task::none();
+                };
+                if s.password.is_empty() {
+                    s.error_message = Some("请输入主密码".to_string());
+                    return Task::none();
+                }
+                s.is_loading = true;
+                s.error_message = None;
+                let password = SecretString::new(s.password.clone().into());
+                let vault_path = self.vault_path.clone();
+                let slot = self.pending_vault.clone();
+                Task::perform(
+                    async move {
+                        tokio::task::spawn_blocking(move || match &vault_path {
+                            Some(path) => {
+                                if let Some(parent) = path.parent() {
+                                    std::fs::create_dir_all(parent)?;
+                                }
+                                let v = Vault::create(path, &password)?;
+                                *slot.lock().unwrap() = Some(v);
+                                Ok::<(), VaultError>(())
+                            }
+                            None => Err(VaultError::Io(std::io::Error::new(
+                                std::io::ErrorKind::NotFound,
+                                "未找到金库路径",
+                            ))),
+                        })
+                        .await
+                        .unwrap_or_else(|e| {
+                            Err(VaultError::Io(std::io::Error::other(e.to_string())))
+                        })
+                    },
+                    |result| match result {
+                        Ok(()) => Message::UnlockSuccess,
+                        Err(e) => Message::UnlockFailed(e.to_string()),
+                    },
+                )
+            }
+            Message::UnlockSuccess => {
+                let vault = self.pending_vault.lock().unwrap().take();
+                self.vault = vault;
+                self.error_count = 0;
+                self.lockout_until = None;
+                self.screen = Screen::List(ListScreen::default());
+                Task::none()
+            }
+            Message::UnlockFailed(err) => {
+                self.error_count += 1;
+                let backoff = if self.error_count >= 5 {
+                    30
+                } else if self.error_count >= 3 {
+                    10
+                } else {
+                    0
+                };
+                if backoff > 0 {
+                    let until = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                        + backoff;
+                    self.lockout_until = Some(until);
+                }
+                if let Screen::Unlock(s) = &mut self.screen {
+                    s.is_loading = false;
+                    s.password.clear();
+                    s.error_message = Some(err);
+                }
+                Task::none()
+            }
+            Message::LockVault => {
+                if let Some(vault) = self.vault.as_mut() {
+                    vault.lock();
+                }
+                self.screen = Screen::Unlock(UnlockScreen::default());
+                Task::none()
+            }
+            Message::SetTheme(pref) => {
+                self.theme_pref = pref;
+                Task::none()
+            }
+            Message::SetAutoLockTimeout(secs) => {
+                self.auto_lock_timeout = secs;
+                self.last_activity = now_secs();
+                Task::none()
+            }
+            Message::CopyToClipboard(text) => {
+                if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                    let _ = clipboard.set_text(text);
+                }
+                self.clipboard_copied_at = Some(now_secs());
+                self.last_activity = now_secs();
+                Task::none()
+            }
+            Message::NavigateTo(target) => {
+                self.last_activity = now_secs();
+                self.navigate(target);
+                Task::none()
+            }
+            Message::GoBack => {
+                self.screen = Screen::List(ListScreen::default());
+                Task::none()
+            }
+            Message::TotpTick => {
+                let now = now_secs();
+                // 自动锁定检查
+                if self.vault.is_some()
+                    && self.auto_lock_timeout > 0
+                    && now.saturating_sub(self.last_activity) >= self.auto_lock_timeout
+                {
+                    if let Some(vault) = self.vault.as_mut() {
+                        let _ = vault.lock();
+                    }
+                    self.vault = None;
+                    self.screen = Screen::Unlock(UnlockScreen::default());
+                    self.clipboard_copied_at = None;
+                    return Task::none();
+                }
+                // 剪贴板自动清除（30 秒后）
+                if let Some(copied_at) = self.clipboard_copied_at {
+                    if now.saturating_sub(copied_at) >= 30 {
+                        if let Ok(mut cb) = arboard::Clipboard::new() {
+                            let _ = cb.set_text("");
+                        }
+                        self.clipboard_copied_at = None;
+                    }
+                }
+                Task::none()
+            }
+            Message::TogglePasswordVisible(id) => {
+                match &mut self.screen {
+                    Screen::List(s) => {
+                        if s.visible_passwords.contains(&id) {
+                            s.visible_passwords.remove(&id);
+                        } else {
+                            s.visible_passwords.insert(id);
+                        }
+                    }
+                    Screen::Detail(s) => {
+                        s.show_password = !s.show_password;
+                    }
+                    _ => {}
+                }
+                Task::none()
+            }
+            Message::SearchChanged(q) => {
+                if let Screen::List(s) = &mut self.screen {
+                    s.search_query = q;
+                }
+                Task::none()
+            }
+            Message::SelectEntry(id) => {
+                self.navigate(NavigationTarget::Detail(id));
+                Task::none()
+            }
+            Message::DeleteEntry(id) => {
+                if let Some(vault) = self.vault.as_mut() {
+                    if let Ok(entries) = vault.entries_mut() {
+                        entries.retain(|e| e.id != id);
+                        let _ = vault.save();
+                    }
+                }
+                Task::none()
+            }
+            Message::NewEntryTitleChanged(v) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.title = v;
+                }
+                Task::none()
+            }
+            Message::NewEntryUsernameChanged(v) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.username = v;
+                }
+                Task::none()
+            }
+            Message::NewEntryPasswordChanged(v) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.password = v;
+                }
+                Task::none()
+            }
+            Message::NewEntryUrlChanged(v) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.url = v;
+                }
+                Task::none()
+            }
+            Message::NewEntryToggleShowPassword => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.show_password = !s.show_password;
+                }
+                Task::none()
+            }
+            Message::NewEntryToggleTotp => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.include_totp = !s.include_totp;
+                }
+                Task::none()
+            }
+            Message::NewEntryTotpSecretChanged(v) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.totp_secret = v;
+                }
+                Task::none()
+            }
+            Message::NewEntryTotpIssuerChanged(v) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.totp_issuer = v;
+                }
+                Task::none()
+            }
+            Message::SaveEntry => {
+                let Screen::NewEntry(s) = &self.screen else {
+                    return Task::none();
+                };
+                if s.title.is_empty() {
+                    if let Screen::NewEntry(s) = &mut self.screen {
+                        s.error_message = Some("标题不能为空".to_string());
+                    }
+                    return Task::none();
+                }
+                // 构建 Entry
+                let pw_data =
+                    if !s.username.is_empty() || !s.password.is_empty() || !s.url.is_empty() {
+                        Some(vaultx_core::entry::PasswordData {
+                            username: s.username.clone(),
+                            password: s.password.clone(),
+                            url: s.url.clone(),
+                            notes: String::new(),
+                        })
+                    } else {
+                        None
+                    };
+                let totp_data = if s.include_totp && !s.totp_secret.is_empty() {
+                    Some(vaultx_core::entry::TotpData {
+                        secret: s.totp_secret.clone(),
+                        issuer: s.totp_issuer.clone(),
+                        account: s.username.clone(),
+                        algorithm: vaultx_core::entry::TotpAlgorithm::SHA1,
+                        digits: 6,
+                        period: 30,
+                    })
+                } else {
+                    None
+                };
+                let title = s.title.clone();
+                if pw_data.is_none() && totp_data.is_none() {
+                    if let Screen::NewEntry(s) = &mut self.screen {
+                        s.error_message = Some("请至少填写用户名/密码或启用 TOTP".to_string());
+                    }
+                    return Task::none();
+                }
+                let mut entry = vaultx_core::entry::Entry::new_password(
+                    title,
+                    pw_data.unwrap_or(vaultx_core::entry::PasswordData {
+                        username: String::new(),
+                        password: String::new(),
+                        url: String::new(),
+                        notes: String::new(),
+                    }),
+                );
+                entry.totp = totp_data;
+                if let Some(vault) = self.vault.as_mut() {
+                    if let Ok(entries) = vault.entries_mut() {
+                        entries.push(entry);
+                        let _ = vault.save();
+                    }
+                }
+                self.screen = Screen::List(ListScreen::default());
+                Task::none()
+            }
+            Message::GeneratePassword => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            Message::GeneratorLengthChanged(len) => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.config.length = len as usize;
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            Message::GeneratorToggleUppercase => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.config.uppercase = !s.config.uppercase;
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            Message::GeneratorToggleLowercase => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.config.lowercase = !s.config.lowercase;
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            Message::GeneratorToggleDigits => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.config.digits = !s.config.digits;
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            Message::GeneratorToggleSymbols => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.config.symbols = !s.config.symbols;
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            Message::GeneratorToggleAmbiguous => {
+                if let Screen::Generator(s) = &mut self.screen {
+                    s.config.exclude_ambiguous = !s.config.exclude_ambiguous;
+                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
+                }
+                Task::none()
+            }
+            _ => Task::none(),
+        }
+    }
+
+    pub fn view(&self) -> Element<Message> {
+        match &self.screen {
+            Screen::Unlock(s) => s.view(),
+            Screen::List(s) => {
+                let entries = self
+                    .vault
+                    .as_ref()
+                    .and_then(|v| v.entries().ok())
+                    .unwrap_or(&[]);
+                s.view(entries)
+            }
+            Screen::Detail(s) => {
+                let entry = self
+                    .vault
+                    .as_ref()
+                    .and_then(|v| v.entries().ok())
+                    .and_then(|entries| entries.iter().find(|e| e.id == s.entry_id));
+                s.view(entry)
+            }
+            Screen::TotpView(s) => {
+                let empty: &[_] = &[];
+                let entries = self
+                    .vault
+                    .as_ref()
+                    .and_then(|v| v.entries().ok())
+                    .unwrap_or(empty);
+                s.view(entries)
+            }
+            Screen::Generator(s) => s.view(),
+            Screen::Settings(s) => s.view(),
+            Screen::NewEntry(s) => s.view(),
+        }
+    }
+
+    pub fn subscription(&self) -> Subscription<Message> {
+        iced::time::every(std::time::Duration::from_secs(1)).map(|_| Message::TotpTick)
+    }
+
+    fn navigate(&mut self, target: NavigationTarget) {
+        self.screen = match target {
+            NavigationTarget::List => Screen::List(ListScreen::default()),
+            NavigationTarget::Detail(id) => Screen::Detail(DetailScreen::new(id)),
+            NavigationTarget::TotpView => Screen::TotpView(TotpViewScreen::default()),
+            NavigationTarget::Generator => Screen::Generator(GeneratorScreen::default()),
+            NavigationTarget::Settings => Screen::Settings(SettingsScreen {
+                theme_pref: self.theme_pref,
+                auto_lock_timeout: self.auto_lock_timeout,
+            }),
+            NavigationTarget::NewEntry => Screen::NewEntry(NewEntryScreen::default()),
+        };
+    }
+}
+
+/// 获取默认金库路径（跨平台）
+pub fn default_vault_path() -> Option<PathBuf> {
+    dirs::data_dir().map(|d| d.join("VaultX").join("vault.vaultx"))
+}
+
+/// 字体字节（编译期嵌入）
+static INTER_FONT: &[u8] = include_bytes!("../../fonts/Inter-VariableFont_opsz,wght.ttf");
+static ROBOTO_MONO_FONT: &[u8] = include_bytes!("../../fonts/RobotoMono-VariableFont_wght.ttf");
+static WQY_MICROHEI_FONT: &[u8] = include_bytes!("../../fonts/wqy-microhei.ttc");
+static MATERIAL_ICONS_FONT: &[u8] = include_bytes!("../../fonts/MaterialIcons-Regular.ttf");
+
+/// Material Icons Round 字体句柄
+pub const MATERIAL_ICONS: iced::Font = iced::Font::with_name("Material Icons");
+
+/// 应用程序入口
+pub fn run() -> iced::Result {
+    iced::application(VaultApp::title, VaultApp::update, VaultApp::view)
+        .subscription(VaultApp::subscription)
+        .theme(VaultApp::theme)
+        .font(WQY_MICROHEI_FONT)
+        .font(INTER_FONT)
+        .font(ROBOTO_MONO_FONT)
+        .font(MATERIAL_ICONS_FONT)
+        .default_font(iced::Font::with_name("WenQuanYi Micro Hei"))
+        .window(iced::window::Settings {
+            size: iced::Size::new(
+                crate::theme::layout::APP_WIDTH,
+                crate::theme::layout::APP_HEIGHT,
+            ),
+            min_size: Some(iced::Size::new(760.0, 520.0)),
+            resizable: true,
+            ..Default::default()
+        })
+        .run_with(VaultApp::new)
+}
