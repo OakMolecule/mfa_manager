@@ -20,6 +20,7 @@ pub enum ThemePreference {
     #[default]
     Light,
     Dark,
+    #[allow(dead_code)]
     System,
 }
 
@@ -45,6 +46,14 @@ pub struct VaultApp {
     auto_lock_timeout: u64,
     /// 上次复制内容到剪贴板的时间（Unix 秒），用于自动清除
     clipboard_copied_at: Option<u64>,
+    /// 剪贴板清除延迟（秒）
+    clipboard_clear_seconds: u64,
+    /// 密码错误最大次数（触发退避锁定）
+    max_error_count: u32,
+    /// 密码生成器（抽屉式）
+    generator: GeneratorScreen,
+    /// 密码生成器是否打开
+    generator_open: bool,
 }
 
 /// 屏幕枚举
@@ -71,6 +80,7 @@ pub enum Message {
 
     // ── 导航 ──────────────────────────────────────────────────
     NavigateTo(NavigationTarget),
+    #[allow(dead_code)]
     GoBack,
 
     // ── 列表 ──────────────────────────────────────────────────
@@ -87,6 +97,8 @@ pub enum Message {
     // ── 主题 ──────────────────────────────────────────────────
     SetTheme(ThemePreference),
     SetAutoLockTimeout(u64),
+    SetClipboardClearSeconds(u64),
+    SetMaxErrorCount(u32),
 
     // ── 新建条目 ───────────────────────────────────────────────
     NewEntryTitleChanged(String),
@@ -97,8 +109,13 @@ pub enum Message {
     NewEntryToggleTotp,
     NewEntryTotpSecretChanged(String),
     NewEntryTotpIssuerChanged(String),
+    NewEntryTogglePasswordSection,
+    NewEntryToggleTotpSection,
+    NewEntrySetCategory(Option<String>),
 
     // ── 生成器 ────────────────────────────────────────────────
+    OpenGenerator,
+    CloseGenerator,
     GeneratePassword,
     GeneratorLengthChanged(u8),
     GeneratorToggleUppercase,
@@ -109,6 +126,7 @@ pub enum Message {
 
     // ── 系统 ──────────────────────────────────────────────────
     LockVault,
+    #[allow(dead_code)]
     Noop,
 }
 
@@ -143,6 +161,10 @@ impl VaultApp {
                 last_activity: now_secs(),
                 auto_lock_timeout: 300, // 默认 5 分钟
                 clipboard_copied_at: None,
+                clipboard_clear_seconds: 30, // 默认 30 秒
+                max_error_count: 5, // 默认最多 5 次
+                generator: GeneratorScreen::default(),
+                generator_open: false,
             },
             Task::none(),
         )
@@ -265,9 +287,9 @@ impl VaultApp {
             }
             Message::UnlockFailed(err) => {
                 self.error_count += 1;
-                let backoff = if self.error_count >= 5 {
+                let backoff = if self.error_count >= self.max_error_count {
                     30
-                } else if self.error_count >= 3 {
+                } else if self.error_count >= (self.max_error_count / 2).max(2) {
                     10
                 } else {
                     0
@@ -303,6 +325,14 @@ impl VaultApp {
                 self.last_activity = now_secs();
                 Task::none()
             }
+            Message::SetClipboardClearSeconds(secs) => {
+                self.clipboard_clear_seconds = secs;
+                Task::none()
+            }
+            Message::SetMaxErrorCount(count) => {
+                self.max_error_count = count;
+                Task::none()
+            }
             Message::CopyToClipboard(text) => {
                 if let Ok(mut clipboard) = arboard::Clipboard::new() {
                     let _ = clipboard.set_text(text);
@@ -335,9 +365,9 @@ impl VaultApp {
                     self.clipboard_copied_at = None;
                     return Task::none();
                 }
-                // 剪贴板自动清除（30 秒后）
+                // 剪贴板自动清除（使用配置的延迟）
                 if let Some(copied_at) = self.clipboard_copied_at {
-                    if now.saturating_sub(copied_at) >= 30 {
+                    if now.saturating_sub(copied_at) >= self.clipboard_clear_seconds {
                         if let Ok(mut cb) = arboard::Clipboard::new() {
                             let _ = cb.set_text("");
                         }
@@ -429,6 +459,24 @@ impl VaultApp {
                 }
                 Task::none()
             }
+            Message::NewEntryTogglePasswordSection => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.password_section_expanded = !s.password_section_expanded;
+                }
+                Task::none()
+            }
+            Message::NewEntryToggleTotpSection => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.totp_section_expanded = !s.totp_section_expanded;
+                }
+                Task::none()
+            }
+            Message::NewEntrySetCategory(cat) => {
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    s.category = cat;
+                }
+                Task::none()
+            }
             Message::SaveEntry => {
                 let Screen::NewEntry(s) = &self.screen else {
                     return Task::none();
@@ -489,59 +537,61 @@ impl VaultApp {
                 self.screen = Screen::List(ListScreen::default());
                 Task::none()
             }
+            Message::OpenGenerator => {
+                self.generator_open = true;
+                Task::none()
+            }
+            Message::CloseGenerator => {
+                self.generator_open = false;
+                Task::none()
+            }
             Message::GeneratePassword => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             Message::GeneratorLengthChanged(len) => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.config.length = len as usize;
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.config.length = len as usize;
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             Message::GeneratorToggleUppercase => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.config.uppercase = !s.config.uppercase;
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.config.uppercase = !self.generator.config.uppercase;
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             Message::GeneratorToggleLowercase => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.config.lowercase = !s.config.lowercase;
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.config.lowercase = !self.generator.config.lowercase;
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             Message::GeneratorToggleDigits => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.config.digits = !s.config.digits;
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.config.digits = !self.generator.config.digits;
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             Message::GeneratorToggleSymbols => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.config.symbols = !s.config.symbols;
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.config.symbols = !self.generator.config.symbols;
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             Message::GeneratorToggleAmbiguous => {
-                if let Screen::Generator(s) = &mut self.screen {
-                    s.config.exclude_ambiguous = !s.config.exclude_ambiguous;
-                    s.generated = vaultx_core::PasswordGenerator::generate(&s.config);
-                }
+                self.generator.config.exclude_ambiguous =
+                    !self.generator.config.exclude_ambiguous;
+                self.generator.generated =
+                    vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
             }
             _ => Task::none(),
         }
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         match &self.screen {
             Screen::Unlock(s) => s.view(),
             Screen::List(s) => {
@@ -558,7 +608,7 @@ impl VaultApp {
                     .as_ref()
                     .and_then(|v| v.entries().ok())
                     .and_then(|entries| entries.iter().find(|e| e.id == s.entry_id));
-                s.view(entry)
+                s.view(entry, self.generator_open, &self.generator)
             }
             Screen::TotpView(s) => {
                 let empty: &[_] = &[];
@@ -584,10 +634,15 @@ impl VaultApp {
             NavigationTarget::List => Screen::List(ListScreen::default()),
             NavigationTarget::Detail(id) => Screen::Detail(DetailScreen::new(id)),
             NavigationTarget::TotpView => Screen::TotpView(TotpViewScreen::default()),
-            NavigationTarget::Generator => Screen::Generator(GeneratorScreen::default()),
+            NavigationTarget::Generator => {
+                self.generator_open = true;
+                self.screen.clone()
+            }
             NavigationTarget::Settings => Screen::Settings(SettingsScreen {
                 theme_pref: self.theme_pref,
                 auto_lock_timeout: self.auto_lock_timeout,
+                clipboard_clear_seconds: self.clipboard_clear_seconds,
+                max_error_count: self.max_error_count,
             }),
             NavigationTarget::NewEntry => Screen::NewEntry(NewEntryScreen::default()),
         };

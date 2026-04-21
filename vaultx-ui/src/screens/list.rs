@@ -1,6 +1,7 @@
 use crate::app::{Message, NavigationTarget, MATERIAL_ICONS};
 use crate::icons;
 use crate::theme::{self as t};
+use crate::widgets::sidebar::create_sidebar;
 use iced::{
     widget::{button, column, container, progress_bar, row, scrollable, text, text_input, Space},
     Alignment, Border, Color, Element, Length, Shadow, Vector,
@@ -34,10 +35,11 @@ impl ListScreen {
                             .font(MATERIAL_ICONS)
                             .size(16)
                             .color(Color::from_rgba(1.0, 1.0, 1.0, 0.7)),
+                        Space::with_width(4),
                         text_input("搜索条目...", &self.search_query)
                             .on_input(Message::SearchChanged)
                             .size(14)
-                            .padding([6, 10])
+                            .padding([0, 0])
                             .width(Length::Fill)
                             .style(|_: &iced::Theme, _| iced::widget::text_input::Style {
                                 background: iced::Background::Color(Color::TRANSPARENT),
@@ -46,16 +48,23 @@ impl ListScreen {
                                     ..Default::default()
                                 },
                                 icon: Color::from_rgba(1.0, 1.0, 1.0, 0.7),
-                                placeholder: Color::from_rgba(1.0, 1.0, 1.0, 0.6),
+                                placeholder: Color::from_rgba(1.0, 1.0, 1.0, 0.7),
                                 value: Color::WHITE,
                                 selection: Color::from_rgba(1.0, 1.0, 1.0, 0.3),
                             }),
                     ]
-                    .spacing(6)
-                    .align_y(Alignment::Center),
+                    .spacing(0)
+                    .align_y(Alignment::Center)
+                    .padding(iced::Padding {
+                        top: 0.0,
+                        right: 12.0,
+                        bottom: 0.0,
+                        left: 16.0,
+                    }),
                 )
                 .width(280)
-                .padding([5, 12])
+                .height(36)
+                .align_y(iced::alignment::Vertical::Center)
                 .style(|_: &iced::Theme| iced::widget::container::Style {
                     background: Some(iced::Background::Color(Color::from_rgba(
                         1.0, 1.0, 1.0, 0.15
@@ -143,159 +152,9 @@ impl ListScreen {
             ..Default::default()
         });
 
-        // ── 左侧导航栏：浅蓝色 #E3F2FD，200px ───────────────────────────
-        let nav_item = |icon_cp: &'a str,
-                        label: String,
-                        active: bool,
-                        msg: Option<Message>|
-         -> Element<'a, Message> {
-            let icon_color = if active { t::PRIMARY } else { t::ON_SURFACE };
-            let label_color = if active { t::PRIMARY } else { t::ON_SURFACE };
-            let bg = if active {
-                Some(iced::Background::Color(Color::from_rgb(
-                    0.733, 0.871, 0.984,
-                ))) // #BBDEFB
-            } else {
-                None
-            };
-            let pad_left = if active { 7.0_f32 } else { 10.0_f32 };
-
-            let content = row![
-                text(icon_cp)
-                    .font(MATERIAL_ICONS)
-                    .size(16)
-                    .color(icon_color),
-                text(label).size(13).color(label_color),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center)
-            .width(Length::Fill);
-
-            let inner = container(content)
-                .padding(iced::Padding {
-                    top: 9.0,
-                    right: 10.0,
-                    bottom: 9.0,
-                    left: pad_left,
-                })
-                .width(Length::Fill);
-
-            let styled_btn = if let Some(m) = msg {
-                button(inner)
-                    .on_press(m)
-                    .width(Length::Fill)
-                    .padding(0)
-                    .style(move |_: &iced::Theme, _| iced::widget::button::Style {
-                        background: bg,
-                        border: Border {
-                            radius: 8.0.into(),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-            } else {
-                button(inner)
-                    .width(Length::Fill)
-                    .padding(0)
-                    .style(move |_: &iced::Theme, _| iced::widget::button::Style {
-                        background: bg,
-                        border: Border {
-                            radius: 8.0.into(),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    })
-            };
-
-            if active {
-                row![
-                    container(Space::with_width(3))
-                        .height(Length::Shrink)
-                        .padding([4, 0])
-                        .style(|_: &iced::Theme| iced::widget::container::Style {
-                            background: Some(iced::Background::Color(t::PRIMARY)),
-                            border: Border {
-                                radius: iced::border::Radius {
-                                    top_left: 0.0,
-                                    top_right: 3.0,
-                                    bottom_right: 3.0,
-                                    bottom_left: 0.0
-                                },
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        }),
-                    styled_btn,
-                ]
-                .width(Length::Fill)
-                .into()
-            } else {
-                styled_btn.into()
-            }
-        };
-
+        // ── 左侧导航栏：使用可复用的侧边栏组件 ───────────────────────────
         let totp_count = entries.iter().filter(|e| e.totp.is_some()).count();
-        let totp_label = format!("TOTP ({})", totp_count);
-
-        let sidebar_col = column![
-            // 全部条目
-            nav_item(icons::LOCK_OPEN, "全部条目".to_string(), true, None),
-            // 分隔线
-            container(Space::with_height(1))
-                .width(Length::Fill)
-                .style(|_: &iced::Theme| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::from_rgb(
-                        0.773, 0.859, 0.941
-                    ))),
-                    ..Default::default()
-                }),
-            // 类型分组标题
-            container(text("类型").size(11).color(t::ON_SURFACE_VARIANT),).padding(iced::Padding {
-                top: 8.0,
-                right: 4.0,
-                bottom: 4.0,
-                left: 14.0
-            }),
-            nav_item(icons::KEY, "密码".to_string(), false, None),
-            nav_item(
-                icons::PHONELINK_LOCK,
-                totp_label,
-                false,
-                Some(Message::NavigateTo(NavigationTarget::TotpView)),
-            ),
-            // 分隔线
-            container(Space::with_height(1))
-                .width(Length::Fill)
-                .style(|_: &iced::Theme| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::from_rgb(
-                        0.773, 0.859, 0.941
-                    ))),
-                    ..Default::default()
-                }),
-            // 工具分组标题
-            container(text("工具").size(11).color(t::ON_SURFACE_VARIANT),).padding(iced::Padding {
-                top: 8.0,
-                right: 4.0,
-                bottom: 4.0,
-                left: 14.0
-            }),
-            nav_item(
-                icons::VPN_KEY,
-                "密码生成器".to_string(),
-                false,
-                Some(Message::NavigateTo(NavigationTarget::Generator))
-            ),
-        ]
-        .spacing(2)
-        .padding([8, 0]);
-
-        let sidebar_container = container(sidebar_col)
-            .width(200)
-            .height(Length::Fill)
-            .style(|_: &iced::Theme| iced::widget::container::Style {
-                background: Some(iced::Background::Color(t::SURFACE_VARIANT)),
-                ..Default::default()
-            });
+        let sidebar_container = create_sidebar(NavigationTarget::List, totp_count);
 
         // ── 过滤条目 ──────────────────────────────────────────────────────
         let query = self.search_query.to_lowercase();

@@ -209,4 +209,186 @@ impl GeneratorScreen {
 
         column![topbar, content].into()
     }
+
+    /// 渲染抽屉式生成器（在 Detail 页面上叠加显示）
+    pub fn view_drawer(&self) -> Element<'_, Message> {
+        // ── 生成的密码展示框 ──────────────────────────────────────────────
+        let pw_display = container(
+            row![
+                text(icons::KEY)
+                    .font(MATERIAL_ICONS)
+                    .size(18)
+                    .color(t::PRIMARY),
+                Space::with_width(8),
+                text(&self.generated)
+                    .font(iced::Font::with_name("Roboto Mono"))
+                    .size(14)
+                    .color(t::ON_SURFACE)
+                    .width(Length::Fill),
+            ]
+            .align_y(Alignment::Center)
+            .spacing(4),
+        )
+        .padding([12, 16])
+        .width(Length::Fill)
+        .style(|_: &iced::Theme| iced::widget::container::Style {
+            background: Some(iced::Background::Color(t::SURFACE_VARIANT)),
+            border: Border {
+                radius: 8.0.into(),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+
+        // ── 操作按钮 ──────────────────────────────────────────────────────
+        let action_buttons = row![
+            button(
+                row![
+                    text(icons::CONTENT_COPY).font(MATERIAL_ICONS).size(16),
+                    text("复制").size(13),
+                ]
+                .spacing(4)
+                .align_y(Alignment::Center),
+            )
+            .on_press(Message::CopyToClipboard(self.generated.clone()))
+            .padding([8, 14])
+            .style(|_: &iced::Theme, _| iced::widget::button::Style {
+                background: Some(iced::Background::Color(t::PRIMARY)),
+                text_color: Color::WHITE,
+                border: Border {
+                    radius: 6.0.into(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .width(Length::Fill),
+            button(
+                row![
+                    text(icons::REFRESH).font(MATERIAL_ICONS).size(16),
+                    text("重新生成").size(13),
+                ]
+                .spacing(4)
+                .align_y(Alignment::Center),
+            )
+            .on_press(Message::GeneratePassword)
+            .padding([8, 14])
+            .style(|_: &iced::Theme, _| iced::widget::button::Style {
+                background: Some(iced::Background::Color(Color::from_rgb(
+                    0.6, 0.6, 0.6
+                ))),
+                text_color: Color::WHITE,
+                border: Border {
+                    radius: 6.0.into(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .width(Length::Fill),
+        ]
+        .spacing(8);
+
+        // ── 长度滑块 ──────────────────────────────────────────────────────
+        let len_val = self.config.length as u8;
+        let length_row = column![
+            row![
+                text("密码长度").size(13).color(t::ON_SURFACE),
+                Space::with_width(Length::Fill),
+                container(text(format!("{}", len_val)).size(13).color(t::PRIMARY))
+                    .padding([2, 8])
+                    .style(|_: &iced::Theme| iced::widget::container::Style {
+                        background: Some(iced::Background::Color(t::SURFACE_VARIANT)),
+                        border: Border {
+                            radius: 6.0.into(),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    }),
+            ]
+            .align_y(Alignment::Center),
+            slider(8..=64, len_val, Message::GeneratorLengthChanged),
+        ]
+        .spacing(6);
+
+        // ── 字符集选项 ────────────────────────────────────────────────────
+        let options = column![
+            checkbox("大写字母 (A-Z)", self.config.uppercase)
+                .on_toggle(|_| Message::GeneratorToggleUppercase)
+                .size(16)
+                .text_size(13),
+            checkbox("小写字母 (a-z)", self.config.lowercase)
+                .on_toggle(|_| Message::GeneratorToggleLowercase)
+                .size(16)
+                .text_size(13),
+            checkbox("数字 (0-9)", self.config.digits)
+                .on_toggle(|_| Message::GeneratorToggleDigits)
+                .size(16)
+                .text_size(13),
+            checkbox("符号 (!@#...)", self.config.symbols)
+                .on_toggle(|_| Message::GeneratorToggleSymbols)
+                .size(16)
+                .text_size(13),
+            checkbox("排除易混淆字符", self.config.exclude_ambiguous)
+                .on_toggle(|_| Message::GeneratorToggleAmbiguous)
+                .size(16)
+                .text_size(13),
+        ]
+        .spacing(10);
+
+        // ── 抽屉卡片 ──────────────────────────────────────────────────────
+        let drawer_card = container(
+            column![
+                // 标题行
+                row![
+                    text(icons::VPN_KEY)
+                        .font(MATERIAL_ICONS)
+                        .size(18)
+                        .color(t::PRIMARY),
+                    text("密码生成器").size(16).color(t::ON_SURFACE),
+                    Space::with_width(Length::Fill),
+                    button(text(icons::CLOSE).font(MATERIAL_ICONS).size(20))
+                        .on_press(Message::CloseGenerator)
+                        .padding(4)
+                        .style(|_: &iced::Theme, _| iced::widget::button::Style {
+                            background: None,
+                            text_color: t::ON_SURFACE,
+                            ..Default::default()
+                        }),
+                ]
+                .align_y(Alignment::Center)
+                .spacing(6),
+                Space::with_height(16),
+                pw_display,
+                Space::with_height(12),
+                action_buttons,
+                Space::with_height(20),
+                text("配置选项")
+                    .size(12)
+                    .color(t::ON_SURFACE_VARIANT),
+                Space::with_height(10),
+                length_row,
+                Space::with_height(14),
+                options,
+            ]
+            .spacing(0)
+            .padding(20),
+        )
+        .width(340)
+        .height(Length::Fill)
+        .style(|_: &iced::Theme| iced::widget::container::Style {
+            background: Some(iced::Background::Color(Color::WHITE)),
+            border: Border {
+                radius: 0.0.into(),
+                ..Default::default()
+            },
+            shadow: Shadow {
+                color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                offset: Vector::new(-4.0, 0.0),
+                blur_radius: 12.0,
+            },
+            ..Default::default()
+        });
+
+        drawer_card.into()
+    }
 }
+

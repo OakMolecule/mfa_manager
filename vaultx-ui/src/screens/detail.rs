@@ -1,8 +1,9 @@
 use crate::app::{Message, NavigationTarget, MATERIAL_ICONS};
 use crate::icons;
+use crate::screens::generator::GeneratorScreen;
 use crate::theme::{self as t};
 use iced::{
-    widget::{button, column, container, row, text, Space},
+    widget::{button, column, container, row, stack, text, Space},
     Alignment, Border, Color, Element, Length, Shadow, Vector,
 };
 use uuid::Uuid;
@@ -23,7 +24,12 @@ impl DetailScreen {
         }
     }
 
-    pub fn view<'a>(&'a self, entry: Option<&'a Entry>) -> Element<'a, Message> {
+    pub fn view<'a>(
+        &'a self,
+        entry: Option<&'a Entry>,
+        generator_open: bool,
+        generator: &'a GeneratorScreen,
+    ) -> Element<'a, Message> {
         let topbar = container(
             row![
                 button(text(icons::CLOSE).font(MATERIAL_ICONS).size(22))
@@ -373,6 +379,33 @@ impl DetailScreen {
                 ..Default::default()
             });
 
-        column![topbar, content].into()
+        let main_view: Element<Message> = column![topbar, content].into();
+
+        // 如果生成器打开，叠加抽屉层
+        if generator_open {
+            let backdrop = container(Space::new(Length::Fill, Length::Fill))
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .style(|_: &iced::Theme| iced::widget::container::Style {
+                    background: Some(iced::Background::Color(Color::from_rgba(
+                        0.0, 0.0, 0.0, 0.3
+                    ))),
+                    ..Default::default()
+                });
+
+            let drawer_container = container(
+                row![
+                    Space::with_width(Length::Fill),
+                    generator.view_drawer(),
+                ]
+                .height(Length::Fill)
+            )
+            .width(Length::Fill)
+            .height(Length::Fill);
+
+            stack![main_view, backdrop, drawer_container].into()
+        } else {
+            main_view
+        }
     }
 }

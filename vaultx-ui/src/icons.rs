@@ -16,24 +16,31 @@ pub const SETTINGS: &str = "\u{E8B8}";
 pub const DELETE: &str = "\u{E872}";
 pub const EDIT: &str = "\u{E3C9}";
 pub const CLOSE: &str = "\u{E5CD}";
+#[allow(dead_code)]
 pub const HOME: &str = "\u{E88A}";
 pub const ADD: &str = "\u{E145}";
 pub const PHONELINK_LOCK: &str = "\u{E0DC}";
 pub const SHIELD: &str = "\u{E9E0}";
 pub const CHECK_CIRCLE: &str = "\u{E86C}";
+#[allow(dead_code)]
 pub const MORE_VERT: &str = "\u{E5D4}";
 pub const TIMER: &str = "\u{E425}";
+#[allow(dead_code)]
 pub const STAR: &str = "\u{E838}";
+#[allow(dead_code)]
 pub const LOGOUT: &str = "\u{E9BA}";
 pub const VPN_KEY: &str = "\u{E0DA}";
 pub const REFRESH: &str = "\u{E5D5}";
+pub const ARROW_BACK: &str = "\u{E5C4}";
 
 /// 便捷函数：创建图标文本 widget
+#[allow(dead_code)]
 pub fn icon(codepoint: &'static str) -> iced::widget::Text<'static> {
     text(codepoint).font(MATERIAL_ICONS)
 }
 
 /// 带颜色的图标
+#[allow(dead_code)]
 pub fn icon_color(codepoint: &'static str, color: iced::Color) -> iced::widget::Text<'static> {
     text(codepoint).font(MATERIAL_ICONS).color(color)
 }

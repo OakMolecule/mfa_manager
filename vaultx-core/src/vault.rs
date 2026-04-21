@@ -3,7 +3,7 @@ use crate::{
     entry::VaultData,
     VAULT_FORMAT_VERSION,
 };
-use secrecy::{ExposeSecret, SecretString, SecretVec};
+use secrecy::{SecretString, SecretVec};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
