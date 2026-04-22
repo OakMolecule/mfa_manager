@@ -24,6 +24,9 @@ pub struct NewEntryScreen {
     // Section 折叠状态
     pub password_section_expanded: bool,
     pub totp_section_expanded: bool,
+    // 切换动画进度 (0.0 = 关/左, 1.0 = 开/右)
+    pub password_toggle_anim: f32,
+    pub totp_toggle_anim: f32,
     // 分类选择
     pub category: Option<String>,
 }
@@ -43,6 +46,8 @@ impl Default for NewEntryScreen {
             error_message: None,
             password_section_expanded: true, // 密码section默认展开
             totp_section_expanded: false,    // TOTP section默认折叠
+            password_toggle_anim: 1.0,       // 对应 expanded = true
+            totp_toggle_anim: 0.0,           // 对应 expanded = false
             category: None,
         }
     }
@@ -208,56 +213,8 @@ impl NewEntryScreen {
 
         // 密码区块：可折叠区块容器
         let password_section = {
-            // 切换开关组件
-            let toggle_bg = if self.password_section_expanded {
-                t::PRIMARY
-            } else {
-                Color::from_rgb(0.78, 0.78, 0.78)
-            };
-            
-            let toggle_circle = container(Space::with_width(0))
-                .width(18)
-                .height(18)
-                .style(move |_: &iced::Theme| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::WHITE)),
-                    border: Border {
-                        radius: 9.0.into(),
-                        ..Default::default()
-                    },
-                    shadow: Shadow {
-                        color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
-                        offset: Vector::new(0.0, 1.0),
-                        blur_radius: 2.0,
-                    },
-                    ..Default::default()
-                });
-
-            let toggle_content = if self.password_section_expanded {
-                row![Space::with_width(22), toggle_circle]
-            } else {
-                row![toggle_circle, Space::with_width(22)]
-            };
-
-            let toggle_widget = button(
-                container(toggle_content.align_y(Alignment::Center))
-                    .width(44)
-                    .height(24)
-                    .style(move |_: &iced::Theme| iced::widget::container::Style {
-                        background: Some(iced::Background::Color(toggle_bg)),
-                        border: Border {
-                            radius: 12.0.into(),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    }),
-            )
-            .on_press(Message::NewEntryTogglePasswordSection)
-            .style(|_, _| button::Style {
-                background: Some(iced::Background::Color(Color::TRANSPARENT)),
-                border: Border::default(),
-                shadow: Shadow::default(),
-                text_color: Color::BLACK,
-            });
+            let toggle_widget =
+                toggle_switch(self.password_toggle_anim, Message::NewEntryTogglePasswordSection);
 
             // 区块标题栏
             let section_header = button(
@@ -330,56 +287,8 @@ impl NewEntryScreen {
 
         // TOTP 区块：可折叠区块容器
         let totp_section = {
-            // 切换开关组件
-            let toggle_bg = if self.totp_section_expanded {
-                t::PRIMARY
-            } else {
-                Color::from_rgb(0.78, 0.78, 0.78)
-            };
-            
-            let toggle_circle = container(Space::with_width(0))
-                .width(18)
-                .height(18)
-                .style(move |_: &iced::Theme| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::WHITE)),
-                    border: Border {
-                        radius: 9.0.into(),
-                        ..Default::default()
-                    },
-                    shadow: Shadow {
-                        color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
-                        offset: Vector::new(0.0, 1.0),
-                        blur_radius: 2.0,
-                    },
-                    ..Default::default()
-                });
-
-            let toggle_content = if self.totp_section_expanded {
-                row![Space::with_width(22), toggle_circle]
-            } else {
-                row![toggle_circle, Space::with_width(22)]
-            };
-
-            let toggle_widget = button(
-                container(toggle_content.align_y(Alignment::Center))
-                    .width(44)
-                    .height(24)
-                    .style(move |_: &iced::Theme| iced::widget::container::Style {
-                        background: Some(iced::Background::Color(toggle_bg)),
-                        border: Border {
-                            radius: 12.0.into(),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    }),
-            )
-            .on_press(Message::NewEntryToggleTotpSection)
-            .style(|_, _| button::Style {
-                background: Some(iced::Background::Color(Color::TRANSPARENT)),
-                border: Border::default(),
-                shadow: Shadow::default(),
-                text_color: Color::BLACK,
-            });
+            let toggle_widget =
+                toggle_switch(self.totp_toggle_anim, Message::NewEntryToggleTotpSection);
 
             // 区块标题栏
             let section_header = button(
@@ -552,4 +461,83 @@ fn label_field(label: &str) -> iced::widget::Text<'static> {
     iced::widget::text(label.to_string())
         .size(12)
         .color(t::ON_SURFACE_VARIANT)
+}
+
+/// Material Design 风格切换开关（Toggle Switch）
+///
+/// 尺寸规格：
+/// - 轨道：44 × 24 px，两端圆角（radius 12）
+/// - 滑块（圆形）：20 × 20 px（radius 10），带 0.5px 描边和轻微阴影
+/// - 水平内边距：左右各 2 px，圆形滑动行程 = 44 - 20 - 4 = 20 px
+///
+/// 参数：
+/// - `anim_progress`：动画进度，`0.0` = 完全关闭（圆在左），`1.0` = 完全开启（圆在右）；
+///   支持中间值以实现平滑滑动动画。
+/// - `on_press`：用户点击开关时发送的 [`Message`]。
+///
+/// 颜色插值：
+/// - 关闭状态轨道色 `rgb(0.78, 0.78, 0.78)`（浅灰）→ 开启状态 `t::PRIMARY`（蓝色）
+fn toggle_switch(anim_progress: f32, on_press: crate::app::Message) -> iced::Element<'static, crate::app::Message> {
+    use iced::widget::{button, container, row, Space};
+    use iced::{Alignment, Border, Color, Shadow, Vector};
+
+    let toggle_bg = lerp_color(
+        Color::from_rgb(0.78, 0.78, 0.78),
+        t::PRIMARY,
+        anim_progress,
+    );
+    let offset = anim_progress * 20.0;
+
+    let toggle_circle = container(Space::with_width(0))
+        .width(20)
+        .height(20)
+        .style(move |_: &iced::Theme| iced::widget::container::Style {
+            background: Some(iced::Background::Color(Color::WHITE)),
+            border: Border {
+                radius: 10.0.into(),
+                width: 0.5,
+                color: Color::from_rgba(0.0, 0.0, 0.0, 0.08),
+            },
+            shadow: Shadow {
+                color: Color::from_rgba(0.0, 0.0, 0.0, 0.25),
+                offset: Vector::new(0.0, 1.0),
+                blur_radius: 3.0,
+            },
+            ..Default::default()
+        });
+
+    let toggle_content = row![Space::with_width(offset), toggle_circle]
+        .align_y(Alignment::Center);
+
+    button(
+        container(toggle_content)
+            .width(44)
+            .center_y(24)
+            .padding([0, 2])
+            .style(move |_: &iced::Theme| iced::widget::container::Style {
+                background: Some(iced::Background::Color(toggle_bg)),
+                border: Border {
+                    radius: 12.0.into(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+    )
+    .on_press(on_press)
+    .style(|_, _| button::Style {
+        background: Some(iced::Background::Color(Color::TRANSPARENT)),
+        border: Border::default(),
+        shadow: Shadow::default(),
+        text_color: Color::BLACK,
+    })
+    .into()
+}
+
+fn lerp_color(from: Color, to: Color, t: f32) -> Color {
+    Color {
+        r: from.r + (to.r - from.r) * t,
+        g: from.g + (to.g - from.g) * t,
+        b: from.b + (to.b - from.b) * t,
+        a: 1.0,
+    }
 }

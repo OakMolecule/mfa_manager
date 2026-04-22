@@ -112,6 +112,7 @@ pub enum Message {
     NewEntryTogglePasswordSection,
     NewEntryToggleTotpSection,
     NewEntrySetCategory(Option<String>),
+    ToggleAnimTick,
 
     // ── 生成器 ────────────────────────────────────────────────
     OpenGenerator,
@@ -471,6 +472,16 @@ impl VaultApp {
                 }
                 Task::none()
             }
+            Message::ToggleAnimTick => {
+                const SPEED: f32 = 0.12;
+                if let Screen::NewEntry(s) = &mut self.screen {
+                    let pw_target = if s.password_section_expanded { 1.0_f32 } else { 0.0 };
+                    s.password_toggle_anim = step_towards(s.password_toggle_anim, pw_target, SPEED);
+                    let totp_target = if s.totp_section_expanded { 1.0_f32 } else { 0.0 };
+                    s.totp_toggle_anim = step_towards(s.totp_toggle_anim, totp_target, SPEED);
+                }
+                Task::none()
+            }
             Message::NewEntrySetCategory(cat) => {
                 if let Screen::NewEntry(s) = &mut self.screen {
                     s.category = cat;
@@ -626,7 +637,27 @@ impl VaultApp {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        iced::time::every(std::time::Duration::from_secs(1)).map(|_| Message::TotpTick)
+        let totp_tick =
+            iced::time::every(std::time::Duration::from_secs(1)).map(|_| Message::TotpTick);
+
+        let needs_anim = if let Screen::NewEntry(s) = &self.screen {
+            let pw_target = if s.password_section_expanded { 1.0_f32 } else { 0.0 };
+            let totp_target = if s.totp_section_expanded { 1.0_f32 } else { 0.0 };
+            (s.password_toggle_anim - pw_target).abs() > 0.005
+                || (s.totp_toggle_anim - totp_target).abs() > 0.005
+        } else {
+            false
+        };
+
+        if needs_anim {
+            Subscription::batch([
+                totp_tick,
+                iced::time::every(std::time::Duration::from_millis(16))
+                    .map(|_| Message::ToggleAnimTick),
+            ])
+        } else {
+            totp_tick
+        }
     }
 
     fn navigate(&mut self, target: NavigationTarget) {
@@ -662,6 +693,17 @@ static MATERIAL_ICONS_FONT: &[u8] = include_bytes!("../../fonts/MaterialIcons-Re
 
 /// Material Icons Round 字体句柄
 pub const MATERIAL_ICONS: iced::Font = iced::Font::with_name("Material Icons");
+
+/// 将 current 向 target 步进 speed，不超过 target
+fn step_towards(current: f32, target: f32, speed: f32) -> f32 {
+    if (current - target).abs() <= speed {
+        target
+    } else if current < target {
+        current + speed
+    } else {
+        current - speed
+    }
+}
 
 /// 应用程序入口
 pub fn run() -> iced::Result {
