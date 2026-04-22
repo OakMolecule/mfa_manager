@@ -58,11 +58,18 @@ impl NewEntryScreen {
         // ── 顶栏 ──────────────────────────────────────────────────────────
         let topbar = container(
             row![
+                // 关闭（圆形）
                 button(
-                    text(icons::CLOSE)
-                        .font(MATERIAL_ICONS)
-                        .size(22)
-                        .color(Color::WHITE)
+                    container(
+                        text(icons::CLOSE)
+                            .font(MATERIAL_ICONS)
+                            .size(22)
+                            .color(Color::WHITE),
+                    )
+                    .width(36)
+                    .height(36)
+                    .align_x(iced::alignment::Horizontal::Center)
+                    .align_y(iced::alignment::Vertical::Center),
                 )
                 .on_press(Message::NavigateTo(NavigationTarget::List))
                 .padding(8)
