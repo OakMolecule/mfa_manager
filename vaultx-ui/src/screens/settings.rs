@@ -26,12 +26,8 @@ const CLIPBOARD_CLEAR_OPTIONS: &[(&str, u64)] = &[
 ];
 
 /// 最大错误次数选项
-const MAX_ERROR_COUNT_OPTIONS: &[(&str, u32)] = &[
-    ("3 次", 3),
-    ("5 次", 5),
-    ("10 次", 10),
-    ("不限制", 999),
-];
+const MAX_ERROR_COUNT_OPTIONS: &[(&str, u32)] =
+    &[("3 次", 3), ("5 次", 5), ("10 次", 10), ("不限制", 999)];
 
 /// 设置页状态
 #[derive(Debug, Clone, Default)]
@@ -46,14 +42,21 @@ impl SettingsScreen {
     pub fn view<'a>(&'a self) -> Element<'a, Message> {
         let topbar = container(
             row![
+                // 返回（圆形）
                 button(
-                    text(icons::ARROW_BACK)
-                        .font(MATERIAL_ICONS)
-                        .size(22)
-                        .color(Color::WHITE)
+                    container(
+                        text(icons::ARROW_BACK)
+                            .font(MATERIAL_ICONS)
+                            .size(22)
+                            .color(Color::WHITE),
+                    )
+                    .width(36)
+                    .height(36)
+                    .align_x(iced::alignment::Horizontal::Center)
+                    .align_y(iced::alignment::Vertical::Center),
                 )
                 .on_press(Message::NavigateTo(NavigationTarget::List))
-                .padding(8)
+                .padding(0)
                 .style(|_: &iced::Theme, _| iced::widget::button::Style {
                     background: Some(iced::Background::Color(Color::from_rgba(
                         1.0, 1.0, 1.0, 0.15
@@ -195,14 +198,12 @@ impl SettingsScreen {
                     ))),
                     ..Default::default()
                 }),
-            container(text("类型").size(11).color(t::ON_SURFACE_VARIANT),).padding(
-                iced::Padding {
-                    top: 8.0,
-                    right: 4.0,
-                    bottom: 4.0,
-                    left: 14.0
-                }
-            ),
+            container(text("类型").size(11).color(t::ON_SURFACE_VARIANT),).padding(iced::Padding {
+                top: 8.0,
+                right: 4.0,
+                bottom: 4.0,
+                left: 14.0
+            }),
             nav_item(icons::KEY, "密码".to_string(), false, None),
             nav_item(icons::PHONELINK_LOCK, "TOTP".to_string(), false, None),
             container(Space::with_height(1))
@@ -213,14 +214,12 @@ impl SettingsScreen {
                     ))),
                     ..Default::default()
                 }),
-            container(text("设置").size(11).color(t::ON_SURFACE_VARIANT),).padding(
-                iced::Padding {
-                    top: 8.0,
-                    right: 4.0,
-                    bottom: 4.0,
-                    left: 14.0
-                }
-            ),
+            container(text("设置").size(11).color(t::ON_SURFACE_VARIANT),).padding(iced::Padding {
+                top: 8.0,
+                right: 4.0,
+                bottom: 4.0,
+                left: 14.0
+            }),
             nav_item(icons::SETTINGS, "设置".to_string(), true, None),
         ]
         .spacing(2)
@@ -239,9 +238,7 @@ impl SettingsScreen {
             // 安全设置组
             container(
                 column![
-                    text("安全设置")
-                        .size(14)
-                        .color(t::ON_SURFACE_VARIANT),
+                    text("安全设置").size(14).color(t::ON_SURFACE_VARIANT),
                     Space::with_height(12),
                     // 修改主密码
                     container(
@@ -254,9 +251,7 @@ impl SettingsScreen {
                                 .on_press(Message::Noop)
                                 .style(|_: &iced::Theme, _| {
                                     iced::widget::button::Style {
-                                        background: Some(iced::Background::Color(
-                                            t::PRIMARY
-                                        )),
+                                        background: Some(iced::Background::Color(t::PRIMARY)),
                                         text_color: Color::WHITE,
                                         border: Border {
                                             radius: 6.0.into(),
@@ -288,14 +283,22 @@ impl SettingsScreen {
                     // 自动锁定（下拉选择）
                     container(
                         row![
-                            text("自动锁定").size(14).color(t::ON_SURFACE).width(
-                                Length::Fill
-                            ),
+                            text("自动锁定")
+                                .size(14)
+                                .color(t::ON_SURFACE)
+                                .width(Length::Fill),
                             pick_list(
-                                AUTO_LOCK_OPTIONS.iter().map(|(label, _)| *label).collect::<Vec<_>>(),
-                                AUTO_LOCK_OPTIONS.iter().find(|(_, v)| *v == self.auto_lock_timeout).map(|(l, _)| *l),
+                                AUTO_LOCK_OPTIONS
+                                    .iter()
+                                    .map(|(label, _)| *label)
+                                    .collect::<Vec<_>>(),
+                                AUTO_LOCK_OPTIONS
+                                    .iter()
+                                    .find(|(_, v)| *v == self.auto_lock_timeout)
+                                    .map(|(l, _)| *l),
                                 |selected| {
-                                    let timeout = AUTO_LOCK_OPTIONS.iter()
+                                    let timeout = AUTO_LOCK_OPTIONS
+                                        .iter()
                                         .find(|(l, _)| *l == selected)
                                         .map(|(_, v)| *v)
                                         .unwrap_or(300);
@@ -344,10 +347,17 @@ impl SettingsScreen {
                                 .color(t::ON_SURFACE)
                                 .width(Length::Fill),
                             pick_list(
-                                CLIPBOARD_CLEAR_OPTIONS.iter().map(|(label, _)| *label).collect::<Vec<_>>(),
-                                CLIPBOARD_CLEAR_OPTIONS.iter().find(|(_, v)| *v == self.clipboard_clear_seconds).map(|(l, _)| *l),
+                                CLIPBOARD_CLEAR_OPTIONS
+                                    .iter()
+                                    .map(|(label, _)| *label)
+                                    .collect::<Vec<_>>(),
+                                CLIPBOARD_CLEAR_OPTIONS
+                                    .iter()
+                                    .find(|(_, v)| *v == self.clipboard_clear_seconds)
+                                    .map(|(l, _)| *l),
                                 |selected| {
-                                    let seconds = CLIPBOARD_CLEAR_OPTIONS.iter()
+                                    let seconds = CLIPBOARD_CLEAR_OPTIONS
+                                        .iter()
                                         .find(|(l, _)| *l == selected)
                                         .map(|(_, v)| *v)
                                         .unwrap_or(30);
@@ -396,10 +406,17 @@ impl SettingsScreen {
                                 .color(t::ON_SURFACE)
                                 .width(Length::Fill),
                             pick_list(
-                                MAX_ERROR_COUNT_OPTIONS.iter().map(|(label, _)| *label).collect::<Vec<_>>(),
-                                MAX_ERROR_COUNT_OPTIONS.iter().find(|(_, v)| *v == self.max_error_count).map(|(l, _)| *l),
+                                MAX_ERROR_COUNT_OPTIONS
+                                    .iter()
+                                    .map(|(label, _)| *label)
+                                    .collect::<Vec<_>>(),
+                                MAX_ERROR_COUNT_OPTIONS
+                                    .iter()
+                                    .find(|(_, v)| *v == self.max_error_count)
+                                    .map(|(l, _)| *l),
                                 |selected| {
-                                    let count = MAX_ERROR_COUNT_OPTIONS.iter()
+                                    let count = MAX_ERROR_COUNT_OPTIONS
+                                        .iter()
                                         .find(|(l, _)| *l == selected)
                                         .map(|(_, v)| *v)
                                         .unwrap_or(5);
@@ -510,9 +527,7 @@ impl SettingsScreen {
             // 外观设置组
             container(
                 column![
-                    text("外观")
-                        .size(14)
-                        .color(t::ON_SURFACE_VARIANT),
+                    text("外观").size(14).color(t::ON_SURFACE_VARIANT),
                     Space::with_height(12),
                     // 主题选择
                     container(
@@ -581,9 +596,7 @@ impl SettingsScreen {
             // 关于组
             container(
                 column![
-                    text("关于")
-                        .size(14)
-                        .color(t::ON_SURFACE_VARIANT),
+                    text("关于").size(14).color(t::ON_SURFACE_VARIANT),
                     Space::with_height(12),
                     // 版本信息
                     container(
@@ -593,9 +606,7 @@ impl SettingsScreen {
                                     .size(14)
                                     .color(t::ON_SURFACE)
                                     .width(Length::Fill),
-                                text("v0.1.0")
-                                    .size(14)
-                                    .color(t::ON_SURFACE_VARIANT),
+                                text("v0.1.0").size(14).color(t::ON_SURFACE_VARIANT),
                             ]
                             .align_y(Alignment::Center),
                             Space::with_height(8),
@@ -650,7 +661,7 @@ impl SettingsScreen {
             top: 20.0,
             right: 20.0,
             bottom: 20.0,
-            left: 20.0
+            left: 20.0,
         })
         .width(Length::Fill);
 

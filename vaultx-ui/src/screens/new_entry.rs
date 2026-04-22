@@ -58,22 +58,27 @@ impl NewEntryScreen {
         // ── 顶栏 ──────────────────────────────────────────────────────────
         let topbar = container(
             row![
-                button(text(icons::CLOSE).font(MATERIAL_ICONS).size(22).color(Color::WHITE))
-                    .on_press(Message::NavigateTo(NavigationTarget::List))
-                    .padding(8)
-                    .style(|_, status| button::Style {
-                        background: Some(iced::Background::Color(match status {
-                            button::Status::Hovered => Color::from_rgba(1.0, 1.0, 1.0, 0.15),
-                            _ => Color::TRANSPARENT,
-                        })),
-                        text_color: Color::WHITE,
-                        border: Border {
-                            color: Color::TRANSPARENT,
-                            width: 0.0,
-                            radius: 100.0.into(),
-                        },
-                        shadow: Shadow::default(),
-                    }),
+                button(
+                    text(icons::CLOSE)
+                        .font(MATERIAL_ICONS)
+                        .size(22)
+                        .color(Color::WHITE)
+                )
+                .on_press(Message::NavigateTo(NavigationTarget::List))
+                .padding(8)
+                .style(|_, status| iced::widget::button::Style {
+                    background: Some(iced::Background::Color(match status {
+                        button::Status::Hovered => Color::from_rgba(1.0, 1.0, 1.0, 0.15),
+                        _ => Color::TRANSPARENT,
+                    })),
+                    text_color: Color::WHITE,
+                    border: Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: 100.0.into(),
+                    },
+                    shadow: Shadow::default(),
+                }),
                 Space::with_width(8),
                 text(icons::ADD_CIRCLE)
                     .font(MATERIAL_ICONS)
@@ -114,6 +119,7 @@ impl NewEntryScreen {
         )
         .height(56)
         .width(Length::Fill)
+        .align_y(iced::alignment::Vertical::Center)
         .style(|_: &iced::Theme| iced::widget::container::Style {
             background: Some(iced::Background::Color(t::PRIMARY)),
             border: Border {
@@ -136,7 +142,7 @@ impl NewEntryScreen {
         };
 
         // ── 表单内容 ──────────────────────────────────────────────────────
-        
+
         // 构建密码区块内容
         let password_section_body = if self.password_section_expanded {
             Some(
@@ -213,8 +219,10 @@ impl NewEntryScreen {
 
         // 密码区块：可折叠区块容器
         let password_section = {
-            let toggle_widget =
-                toggle_switch(self.password_toggle_anim, Message::NewEntryTogglePasswordSection);
+            let toggle_widget = toggle_switch(
+                self.password_toggle_anim,
+                Message::NewEntryTogglePasswordSection,
+            );
 
             // 区块标题栏
             let section_header = button(
@@ -256,15 +264,13 @@ impl NewEntryScreen {
             // 区块主体
             let mut section_col = column![section_header];
             if let Some(body) = password_section_body {
-                section_col = section_col.push(
-                    container(body)
-                        .padding(16)
-                        .width(Length::Fill)
-                        .style(|_: &iced::Theme| iced::widget::container::Style {
+                section_col =
+                    section_col.push(container(body).padding(16).width(Length::Fill).style(
+                        |_: &iced::Theme| iced::widget::container::Style {
                             background: Some(iced::Background::Color(Color::WHITE)),
                             ..Default::default()
-                        }),
-                );
+                        },
+                    ));
             }
 
             container(section_col)
@@ -300,8 +306,7 @@ impl NewEntryScreen {
                                 .size(16)
                                 .color(t::ON_SURFACE),
                             Space::with_width(8),
-                            text("TOTP 双因素验证")
-                                .size(14),
+                            text("TOTP 双因素验证").size(14),
                         ]
                         .align_y(Alignment::Center),
                         Space::with_width(Length::Fill),
@@ -331,15 +336,13 @@ impl NewEntryScreen {
             // 区块主体
             let mut section_col = column![section_header];
             if let Some(body) = totp_section_body {
-                section_col = section_col.push(
-                    container(body)
-                        .padding(16)
-                        .width(Length::Fill)
-                        .style(|_: &iced::Theme| iced::widget::container::Style {
+                section_col =
+                    section_col.push(container(body).padding(16).width(Length::Fill).style(
+                        |_: &iced::Theme| iced::widget::container::Style {
                             background: Some(iced::Background::Color(Color::WHITE)),
                             ..Default::default()
-                        }),
-                );
+                        },
+                    ));
             }
 
             container(section_col)
@@ -477,37 +480,36 @@ fn label_field(label: &str) -> iced::widget::Text<'static> {
 ///
 /// 颜色插值：
 /// - 关闭状态轨道色 `rgb(0.78, 0.78, 0.78)`（浅灰）→ 开启状态 `t::PRIMARY`（蓝色）
-fn toggle_switch(anim_progress: f32, on_press: crate::app::Message) -> iced::Element<'static, crate::app::Message> {
+fn toggle_switch(
+    anim_progress: f32,
+    on_press: crate::app::Message,
+) -> iced::Element<'static, crate::app::Message> {
     use iced::widget::{button, container, row, Space};
     use iced::{Alignment, Border, Color, Shadow, Vector};
 
-    let toggle_bg = lerp_color(
-        Color::from_rgb(0.78, 0.78, 0.78),
-        t::PRIMARY,
-        anim_progress,
-    );
+    let toggle_bg = lerp_color(Color::from_rgb(0.78, 0.78, 0.78), t::PRIMARY, anim_progress);
     let offset = anim_progress * 20.0;
 
-    let toggle_circle = container(Space::with_width(0))
-        .width(20)
-        .height(20)
-        .style(move |_: &iced::Theme| iced::widget::container::Style {
-            background: Some(iced::Background::Color(Color::WHITE)),
-            border: Border {
-                radius: 10.0.into(),
-                width: 0.5,
-                color: Color::from_rgba(0.0, 0.0, 0.0, 0.08),
-            },
-            shadow: Shadow {
-                color: Color::from_rgba(0.0, 0.0, 0.0, 0.25),
-                offset: Vector::new(0.0, 1.0),
-                blur_radius: 3.0,
-            },
-            ..Default::default()
-        });
+    let toggle_circle =
+        container(Space::with_width(0))
+            .width(20)
+            .height(20)
+            .style(move |_: &iced::Theme| iced::widget::container::Style {
+                background: Some(iced::Background::Color(Color::WHITE)),
+                border: Border {
+                    radius: 10.0.into(),
+                    width: 0.5,
+                    color: Color::from_rgba(0.0, 0.0, 0.0, 0.08),
+                },
+                shadow: Shadow {
+                    color: Color::from_rgba(0.0, 0.0, 0.0, 0.25),
+                    offset: Vector::new(0.0, 1.0),
+                    blur_radius: 3.0,
+                },
+                ..Default::default()
+            });
 
-    let toggle_content = row![Space::with_width(offset), toggle_circle]
-        .align_y(Alignment::Center);
+    let toggle_content = row![Space::with_width(offset), toggle_circle].align_y(Alignment::Center);
 
     button(
         container(toggle_content)

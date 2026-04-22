@@ -77,15 +77,21 @@ impl ListScreen {
                     ..Default::default()
                 }),
                 Space::with_width(Length::Fill),
-                // 新建
+                // 新建（圆形）
                 button(
-                    text(icons::ADD)
-                        .font(MATERIAL_ICONS)
-                        .size(20)
-                        .color(Color::WHITE),
+                    container(
+                        text(icons::ADD)
+                            .font(MATERIAL_ICONS)
+                            .size(20)
+                            .color(Color::WHITE),
+                    )
+                    .width(36)
+                    .height(36)
+                    .align_x(iced::alignment::Horizontal::Center)
+                    .align_y(iced::alignment::Vertical::Center),
                 )
                 .on_press(Message::NavigateTo(NavigationTarget::NewEntry))
-                .padding(8)
+                .padding(0)
                 .style(|_: &iced::Theme, _| iced::widget::button::Style {
                     background: Some(iced::Background::Color(Color::from_rgba(
                         1.0, 1.0, 1.0, 0.15
@@ -96,15 +102,21 @@ impl ListScreen {
                     },
                     ..Default::default()
                 }),
-                // 设置
+                // 设置（圆形）
                 button(
-                    text(icons::SETTINGS)
-                        .font(MATERIAL_ICONS)
-                        .size(20)
-                        .color(Color::WHITE),
+                    container(
+                        text(icons::SETTINGS)
+                            .font(MATERIAL_ICONS)
+                            .size(20)
+                            .color(Color::WHITE),
+                    )
+                    .width(36)
+                    .height(36)
+                    .align_x(iced::alignment::Horizontal::Center)
+                    .align_y(iced::alignment::Vertical::Center),
                 )
                 .on_press(Message::NavigateTo(NavigationTarget::Settings))
-                .padding(8)
+                .padding(0)
                 .style(|_: &iced::Theme, _| iced::widget::button::Style {
                     background: Some(iced::Background::Color(Color::from_rgba(
                         1.0, 1.0, 1.0, 0.15
@@ -115,15 +127,21 @@ impl ListScreen {
                     },
                     ..Default::default()
                 }),
-                // 锁定
+                // 锁定（圆形）
                 button(
-                    text(icons::LOCK)
-                        .font(MATERIAL_ICONS)
-                        .size(20)
-                        .color(Color::WHITE),
+                    container(
+                        text(icons::LOCK)
+                            .font(MATERIAL_ICONS)
+                            .size(20)
+                            .color(Color::WHITE),
+                    )
+                    .width(36)
+                    .height(36)
+                    .align_x(iced::alignment::Horizontal::Center)
+                    .align_y(iced::alignment::Vertical::Center),
                 )
                 .on_press(Message::LockVault)
-                .padding(8)
+                .padding(0)
                 .style(|_: &iced::Theme, _| iced::widget::button::Style {
                     background: Some(iced::Background::Color(Color::from_rgba(
                         1.0, 1.0, 1.0, 0.15

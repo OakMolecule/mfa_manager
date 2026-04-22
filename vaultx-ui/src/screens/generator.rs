@@ -273,9 +273,7 @@ impl GeneratorScreen {
             .on_press(Message::GeneratePassword)
             .padding([8, 14])
             .style(|_: &iced::Theme, _| iced::widget::button::Style {
-                background: Some(iced::Background::Color(Color::from_rgb(
-                    0.6, 0.6, 0.6
-                ))),
+                background: Some(iced::Background::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                 text_color: Color::WHITE,
                 border: Border {
                     radius: 6.0.into(),
@@ -361,9 +359,7 @@ impl GeneratorScreen {
                 Space::with_height(12),
                 action_buttons,
                 Space::with_height(20),
-                text("配置选项")
-                    .size(12)
-                    .color(t::ON_SURFACE_VARIANT),
+                text("配置选项").size(12).color(t::ON_SURFACE_VARIANT),
                 Space::with_height(10),
                 length_row,
                 Space::with_height(14),
@@ -391,4 +387,3 @@ impl GeneratorScreen {
         drawer_card.into()
     }
 }
-

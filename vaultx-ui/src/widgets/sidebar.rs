@@ -7,7 +7,7 @@ use iced::{
 };
 
 /// 创建标准侧边栏
-/// 
+///
 /// # 参数
 /// - `current_target`: 当前激活的导航目标
 /// - `totp_count`: TOTP 条目数量（用于显示徽章）
@@ -135,20 +135,13 @@ pub fn create_sidebar<'a>(
                 ..Default::default()
             }),
         // 类型分组标题
-        container(text("类型").size(11).color(t::ON_SURFACE_VARIANT))
-            .padding(iced::Padding {
-                top: 8.0,
-                right: 4.0,
-                bottom: 4.0,
-                left: 14.0
-            }),
-        nav_item(
-            icons::KEY,
-            "密码",
-            None,
-            false,
-            NavigationTarget::List
-        ),
+        container(text("类型").size(11).color(t::ON_SURFACE_VARIANT)).padding(iced::Padding {
+            top: 8.0,
+            right: 4.0,
+            bottom: 4.0,
+            left: 14.0
+        }),
+        nav_item(icons::KEY, "密码", None, false, NavigationTarget::List),
         // TOTP 项（使用 badge 显示计数）
         nav_item(
             icons::PHONELINK_LOCK,
@@ -167,13 +160,12 @@ pub fn create_sidebar<'a>(
                 ..Default::default()
             }),
         // 工具分组标题
-        container(text("工具").size(11).color(t::ON_SURFACE_VARIANT))
-            .padding(iced::Padding {
-                top: 8.0,
-                right: 4.0,
-                bottom: 4.0,
-                left: 14.0
-            }),
+        container(text("工具").size(11).color(t::ON_SURFACE_VARIANT)).padding(iced::Padding {
+            top: 8.0,
+            right: 4.0,
+            bottom: 4.0,
+            left: 14.0
+        }),
         nav_item(
             icons::VPN_KEY,
             "密码生成器",

@@ -163,7 +163,7 @@ impl VaultApp {
                 auto_lock_timeout: 300, // 默认 5 分钟
                 clipboard_copied_at: None,
                 clipboard_clear_seconds: 30, // 默认 30 秒
-                max_error_count: 5, // 默认最多 5 次
+                max_error_count: 5,          // 默认最多 5 次
                 generator: GeneratorScreen::default(),
                 generator_open: false,
             },
@@ -475,9 +475,17 @@ impl VaultApp {
             Message::ToggleAnimTick => {
                 const SPEED: f32 = 0.12;
                 if let Screen::NewEntry(s) = &mut self.screen {
-                    let pw_target = if s.password_section_expanded { 1.0_f32 } else { 0.0 };
+                    let pw_target = if s.password_section_expanded {
+                        1.0_f32
+                    } else {
+                        0.0
+                    };
                     s.password_toggle_anim = step_towards(s.password_toggle_anim, pw_target, SPEED);
-                    let totp_target = if s.totp_section_expanded { 1.0_f32 } else { 0.0 };
+                    let totp_target = if s.totp_section_expanded {
+                        1.0_f32
+                    } else {
+                        0.0
+                    };
                     s.totp_toggle_anim = step_towards(s.totp_toggle_anim, totp_target, SPEED);
                 }
                 Task::none()
@@ -592,8 +600,7 @@ impl VaultApp {
                 Task::none()
             }
             Message::GeneratorToggleAmbiguous => {
-                self.generator.config.exclude_ambiguous =
-                    !self.generator.config.exclude_ambiguous;
+                self.generator.config.exclude_ambiguous = !self.generator.config.exclude_ambiguous;
                 self.generator.generated =
                     vaultx_core::PasswordGenerator::generate(&self.generator.config);
                 Task::none()
@@ -641,8 +648,16 @@ impl VaultApp {
             iced::time::every(std::time::Duration::from_secs(1)).map(|_| Message::TotpTick);
 
         let needs_anim = if let Screen::NewEntry(s) = &self.screen {
-            let pw_target = if s.password_section_expanded { 1.0_f32 } else { 0.0 };
-            let totp_target = if s.totp_section_expanded { 1.0_f32 } else { 0.0 };
+            let pw_target = if s.password_section_expanded {
+                1.0_f32
+            } else {
+                0.0
+            };
+            let totp_target = if s.totp_section_expanded {
+                1.0_f32
+            } else {
+                0.0
+            };
             (s.password_toggle_anim - pw_target).abs() > 0.005
                 || (s.totp_toggle_anim - totp_target).abs() > 0.005
         } else {

@@ -388,17 +388,14 @@ impl DetailScreen {
                 .height(Length::Fill)
                 .style(|_: &iced::Theme| iced::widget::container::Style {
                     background: Some(iced::Background::Color(Color::from_rgba(
-                        0.0, 0.0, 0.0, 0.3
+                        0.0, 0.0, 0.0, 0.3,
                     ))),
                     ..Default::default()
                 });
 
             let drawer_container = container(
-                row![
-                    Space::with_width(Length::Fill),
-                    generator.view_drawer(),
-                ]
-                .height(Length::Fill)
+                row![Space::with_width(Length::Fill), generator.view_drawer(),]
+                    .height(Length::Fill),
             )
             .width(Length::Fill)
             .height(Length::Fill);
