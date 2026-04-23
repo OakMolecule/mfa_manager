@@ -32,6 +32,7 @@ pub const LOGOUT: &str = "\u{E9BA}";
 pub const VPN_KEY: &str = "\u{E0DA}";
 pub const REFRESH: &str = "\u{E5D5}";
 pub const ARROW_BACK: &str = "\u{E5C4}";
+pub const ARROW_FORWARD: &str = "\u{E5C8}";
 
 /// 便捷函数：创建图标文本 widget
 #[allow(dead_code)]

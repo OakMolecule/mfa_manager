@@ -17,14 +17,10 @@ pub const CARD_BG: iced::Color = iced::Color::WHITE;
 pub const ON_SURFACE: iced::Color = color!(0x1A1A1A);
 pub const ON_SURFACE_VARIANT: iced::Color = color!(0x455A64);
 
-#[allow(dead_code)]
 pub const OUTLINE: iced::Color = color!(0x90A4AE);
-#[allow(dead_code)]
 pub const OUTLINE_VARIANT: iced::Color = color!(0xC5CAE9);
 
-#[allow(dead_code)]
 pub const TOPBAR_BG: iced::Color = color!(0x1976D2);
-#[allow(dead_code)]
 pub const SIDEBAR_BG: iced::Color = color!(0xE3F2FD);
 
 pub const ERROR: iced::Color = color!(0xD32F2F);

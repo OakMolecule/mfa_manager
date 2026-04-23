@@ -524,7 +524,8 @@ impl VaultApp {
                     } else {
                         None
                     };
-                let totp_data = if s.include_totp && !s.totp_secret.is_empty() {
+
+                let totp_data = if !s.totp_secret.is_empty() {
                     Some(vaultx_core::entry::TotpData {
                         secret: s.totp_secret.clone(),
                         issuer: s.totp_issuer.clone(),

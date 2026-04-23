@@ -2,6 +2,7 @@ use crate::app::{Message, NavigationTarget, MATERIAL_ICONS};
 use crate::icons;
 use crate::screens::generator::GeneratorScreen;
 use crate::theme::{self as t};
+use chrono::Utc;
 use iced::{
     widget::{button, column, container, row, stack, text, Space},
     Alignment, Border, Color, Element, Length, Shadow, Vector,
@@ -30,6 +31,28 @@ impl DetailScreen {
         generator_open: bool,
         generator: &'a GeneratorScreen,
     ) -> Element<'a, Message> {
+        // 计算相对时间（例如“2小时前”）
+        let update_text = if let Some(e) = entry {
+            let now = Utc::now();
+            let delta = now.signed_duration_since(e.updated_at);
+            let s = if delta.num_seconds() < 60 {
+                "刚刚".to_string()
+            } else if delta.num_minutes() < 60 {
+                format!("{}分钟前", delta.num_minutes())
+            } else if delta.num_hours() < 24 {
+                format!("{}小时前", delta.num_hours())
+            } else if delta.num_days() < 30 {
+                format!("{}天前", delta.num_days())
+            } else if delta.num_days() < 365 {
+                format!("{}月前", delta.num_days() / 30)
+            } else {
+                format!("{}年前", delta.num_days() / 365)
+            };
+            s
+        } else {
+            String::new()
+        };
+
         let topbar = container(
             row![
                 button(text(icons::CLOSE).font(MATERIAL_ICONS).size(22))
@@ -42,6 +65,12 @@ impl DetailScreen {
                     .color(t::PRIMARY),
                 text("条目详情").size(18).color(t::ON_SURFACE),
                 Space::with_width(Length::Fill),
+                text(update_text).size(12).color(t::ON_SURFACE_VARIANT),
+                Space::with_width(8),
+                text(icons::ARROW_FORWARD)
+                    .font(MATERIAL_ICONS)
+                    .size(18)
+                    .color(t::ON_SURFACE_VARIANT),
             ]
             .align_y(Alignment::Center)
             .spacing(6)
