@@ -42,8 +42,8 @@ impl UnlockScreen {
             })
             .width(68)
             .height(68)
-            .center_x(Length::Fill)
-            .center_y(Length::Fill),
+            .align_x(iced::alignment::Horizontal::Center)
+            .align_y(iced::alignment::Vertical::Center),
             text("VaultX").size(26).color(t::PRIMARY),
             text("本地优先 · 安全可靠的密码管理器")
                 .size(13)
