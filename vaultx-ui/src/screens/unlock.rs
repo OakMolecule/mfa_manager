@@ -93,6 +93,8 @@ impl UnlockScreen {
         )
         .on_press_maybe(if self.is_loading {
             None
+        } else if self.is_new_vault {
+            Some(Message::CreateVaultPressed)
         } else {
             Some(Message::UnlockPressed)
         })
