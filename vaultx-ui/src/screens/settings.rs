@@ -1,6 +1,7 @@
 use crate::app::{Message, NavigationTarget, ThemePreference, MATERIAL_ICONS};
 use crate::icons;
 use crate::theme::{self as t};
+use crate::widgets::buttons::primary_topbar;
 use iced::{
     widget::{button, column, container, pick_list, radio, row, scrollable, text, Space},
     Alignment, Border, Color, Element, Length, Shadow, Vector,
@@ -40,57 +41,13 @@ pub struct SettingsScreen {
 
 impl SettingsScreen {
     pub fn view<'a>(&'a self) -> Element<'a, Message> {
-        let topbar = container(
-            row![
-                // 返回（圆形）
-                button(
-                    container(
-                        text(icons::ARROW_BACK)
-                            .font(MATERIAL_ICONS)
-                            .size(22)
-                            .color(Color::WHITE),
-                    )
-                    .width(36)
-                    .height(36)
-                    .align_x(iced::alignment::Horizontal::Center)
-                    .align_y(iced::alignment::Vertical::Center),
-                )
-                .on_press(Message::NavigateTo(NavigationTarget::List))
-                .padding(0)
-                .style(|_: &iced::Theme, _| iced::widget::button::Style {
-                    background: Some(iced::Background::Color(Color::from_rgba(
-                        1.0, 1.0, 1.0, 0.15
-                    ))),
-                    border: Border {
-                        radius: 18.0.into(),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }),
-                Space::with_width(8),
-                text(icons::SETTINGS)
-                    .font(MATERIAL_ICONS)
-                    .size(20)
-                    .color(Color::WHITE),
-                text("设置").size(18).color(Color::WHITE),
-                Space::with_width(Length::Fill),
-            ]
-            .align_y(Alignment::Center)
-            .spacing(6)
-            .padding([0, 16]),
-        )
-        .height(56)
-        .width(Length::Fill)
-        .align_y(iced::alignment::Vertical::Center)
-        .style(|_: &iced::Theme| iced::widget::container::Style {
-            background: Some(iced::Background::Color(t::PRIMARY)),
-            shadow: Shadow {
-                color: Color::from_rgba(0.0, 0.0, 0.0, 0.1),
-                offset: Vector::new(0.0, 2.0),
-                blur_radius: 8.0,
-            },
-            ..Default::default()
-        });
+        let topbar = primary_topbar(
+            icons::ARROW_BACK,
+            Message::NavigateTo(NavigationTarget::List),
+            icons::SETTINGS,
+            "设置",
+            None,
+        );
 
         // ── 左侧导航栏 ──────────────────────────────────────────────────────
         let nav_item = |icon_cp: &'a str,
@@ -239,47 +196,6 @@ impl SettingsScreen {
             container(
                 column![
                     text("安全设置").size(14).color(t::ON_SURFACE_VARIANT),
-                    Space::with_height(12),
-                    // 修改主密码
-                    container(
-                        row![
-                            text("修改主密码")
-                                .size(14)
-                                .color(t::ON_SURFACE)
-                                .width(Length::Fill),
-                            button(text("更改").size(14))
-                                .on_press(Message::Noop)
-                                .style(|_: &iced::Theme, _| {
-                                    iced::widget::button::Style {
-                                        background: Some(iced::Background::Color(t::PRIMARY)),
-                                        text_color: Color::WHITE,
-                                        border: Border {
-                                            radius: 6.0.into(),
-                                            ..Default::default()
-                                        },
-                                        ..Default::default()
-                                    }
-                                })
-                                .padding([6, 16]),
-                        ]
-                        .align_y(Alignment::Center)
-                    )
-                    .padding(iced::Padding {
-                        top: 12.0,
-                        right: 16.0,
-                        bottom: 12.0,
-                        left: 16.0
-                    })
-                    .width(Length::Fill)
-                    .style(|_: &iced::Theme| iced::widget::container::Style {
-                        background: Some(iced::Background::Color(Color::WHITE)),
-                        border: Border {
-                            radius: 0.0.into(),
-                            color: t::SURFACE_VARIANT,
-                            width: 1.0
-                        },
-                        ..Default::default()
-                    }),
                     // 自动锁定（下拉选择）
                     container(
                         row![

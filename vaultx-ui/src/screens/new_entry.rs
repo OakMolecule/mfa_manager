@@ -1,6 +1,7 @@
 use crate::app::{Message, NavigationTarget, MATERIAL_ICONS};
 use crate::icons;
 use crate::theme::{self as t};
+use crate::widgets::buttons::primary_topbar;
 use crate::widgets::sidebar::create_sidebar;
 use iced::{
     widget::{button, column, container, row, scrollable, text, text_input, Space},
@@ -56,91 +57,41 @@ impl Default for NewEntryScreen {
 impl NewEntryScreen {
     pub fn view<'a>(&'a self) -> Element<'a, Message> {
         // ── 顶栏 ──────────────────────────────────────────────────────────
-        let topbar = container(
+        let save_btn: Element<'_, Message> = button(
             row![
-                // 关闭（圆形）
-                button(
-                    container(
-                        text(icons::CLOSE)
-                            .font(MATERIAL_ICONS)
-                            .size(22)
-                            .color(Color::WHITE),
-                    )
-                    .width(36)
-                    .height(36)
-                    .align_x(iced::alignment::Horizontal::Center)
-                    .align_y(iced::alignment::Vertical::Center),
-                )
-                .on_press(Message::NavigateTo(NavigationTarget::List))
-                .padding(8)
-                .style(|_, status| iced::widget::button::Style {
-                    background: Some(iced::Background::Color(match status {
-                        button::Status::Hovered => Color::from_rgba(1.0, 1.0, 1.0, 0.15),
-                        _ => Color::TRANSPARENT,
-                    })),
-                    text_color: Color::WHITE,
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: 100.0.into(),
-                    },
-                    shadow: Shadow::default(),
-                }),
-                Space::with_width(8),
-                text(icons::ADD_CIRCLE)
+                text(icons::CHECK_CIRCLE)
                     .font(MATERIAL_ICONS)
-                    .size(20)
+                    .size(18)
                     .color(Color::WHITE),
-                text("新建条目").size(18).color(Color::WHITE),
-                Space::with_width(Length::Fill),
-                button(
-                    row![
-                        text(icons::CHECK_CIRCLE)
-                            .font(MATERIAL_ICONS)
-                            .size(18)
-                            .color(Color::WHITE),
-                        text("保存").size(14).color(Color::WHITE),
-                    ]
-                    .spacing(4)
-                    .align_y(Alignment::Center),
-                )
-                .on_press(Message::SaveEntry)
-                .padding([8, 16])
-                .style(|_, status| button::Style {
-                    background: Some(iced::Background::Color(match status {
-                        button::Status::Hovered => Color::from_rgba(1.0, 1.0, 1.0, 0.15),
-                        _ => Color::TRANSPARENT,
-                    })),
-                    text_color: Color::WHITE,
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: 8.0.into(),
-                    },
-                    shadow: Shadow::default(),
-                }),
+                text("保存").size(14).color(Color::WHITE),
             ]
-            .align_y(Alignment::Center)
-            .spacing(6)
-            .padding([0, 12]),
+            .spacing(4)
+            .align_y(Alignment::Center),
         )
-        .height(56)
-        .width(Length::Fill)
-        .align_y(iced::alignment::Vertical::Center)
-        .style(|_: &iced::Theme| iced::widget::container::Style {
-            background: Some(iced::Background::Color(t::PRIMARY)),
+        .on_press(Message::SaveEntry)
+        .padding([8, 16])
+        .style(|_, status| button::Style {
+            background: Some(iced::Background::Color(match status {
+                button::Status::Hovered => Color::from_rgba(1.0, 1.0, 1.0, 0.15),
+                _ => Color::TRANSPARENT,
+            })),
+            text_color: Color::WHITE,
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: 0.0.into(),
+                radius: 8.0.into(),
             },
-            shadow: Shadow {
-                color: Color::from_rgba(0.0, 0.0, 0.0, 0.12),
-                offset: Vector::new(0.0, 2.0),
-                blur_radius: 4.0,
-            },
-            ..Default::default()
-        });
+            shadow: Shadow::default(),
+        })
+        .into();
+
+        let topbar = primary_topbar(
+            icons::CLOSE,
+            Message::NavigateTo(NavigationTarget::List),
+            icons::ADD_CIRCLE,
+            "新建条目",
+            Some(save_btn),
+        );
 
         let vis_icon = if self.show_password {
             icons::VISIBILITY_OFF

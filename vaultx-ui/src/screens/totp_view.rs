@@ -1,6 +1,7 @@
 use crate::app::{Message, NavigationTarget, MATERIAL_ICONS};
 use crate::icons;
 use crate::theme::{self as t};
+use crate::widgets::buttons::primary_topbar;
 use crate::widgets::sidebar::create_sidebar;
 use iced::{
     widget::{button, column, container, row, scrollable, text, Space},
@@ -15,50 +16,13 @@ pub struct TotpViewScreen;
 impl TotpViewScreen {
     pub fn view<'a>(&'a self, entries: &'a [Entry]) -> Element<'a, Message> {
         // ── 顶栏 ──────────────────────────────────────────────────────────
-        let topbar = container(
-            row![
-                button(
-                    text(icons::ARROW_BACK)
-                        .font(MATERIAL_ICONS)
-                        .size(22)
-                        .color(Color::WHITE)
-                )
-                .on_press(Message::NavigateTo(NavigationTarget::List))
-                .padding(8)
-                .style(|_: &iced::Theme, _| iced::widget::button::Style {
-                    background: Some(iced::Background::Color(Color::from_rgba(
-                        1.0, 1.0, 1.0, 0.15
-                    ))),
-                    border: Border {
-                        radius: 18.0.into(),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }),
-                Space::with_width(8),
-                text(icons::TIMER)
-                    .font(MATERIAL_ICONS)
-                    .size(20)
-                    .color(Color::WHITE),
-                text("TOTP 验证码").size(18).color(Color::WHITE),
-                Space::with_width(Length::Fill),
-            ]
-            .align_y(Alignment::Center)
-            .spacing(6)
-            .padding([0, 16]),
-        )
-        .height(56)
-        .width(Length::Fill)
-        .align_y(iced::alignment::Vertical::Center)
-        .style(|_: &iced::Theme| iced::widget::container::Style {
-            background: Some(iced::Background::Color(t::PRIMARY)),
-            shadow: Shadow {
-                color: Color::from_rgba(0.0, 0.0, 0.0, 0.1),
-                offset: Vector::new(0.0, 2.0),
-                blur_radius: 8.0,
-            },
-            ..Default::default()
-        });
+        let topbar = primary_topbar(
+            icons::ARROW_BACK,
+            Message::NavigateTo(NavigationTarget::List),
+            icons::TIMER,
+            "TOTP 验证码",
+            None,
+        );
 
         // ── 左侧导航栏：使用可复用的侧边栏组件 ───────────────────────────
         let totp_count = entries.iter().filter(|e| e.totp.is_some()).count();
