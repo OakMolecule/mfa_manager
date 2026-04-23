@@ -289,6 +289,7 @@ impl VaultApp {
                 self.vault = vault;
                 self.error_count = 0;
                 self.lockout_until = None;
+                self.last_activity = now_secs(); // 重置活动时间，避免解锁后立刻触发自动锁定
                 self.screen = Screen::List(ListScreen::default());
                 Task::none()
             }
