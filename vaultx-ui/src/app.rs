@@ -167,8 +167,14 @@ impl VaultApp {
                 generator: GeneratorScreen::default(),
                 generator_open: false,
             },
-            Task::none(),
+            Self::focus_unlock_input(),
         )
+    }
+
+    fn focus_unlock_input() -> Task<Message> {
+        iced::widget::text_input::focus(iced::widget::text_input::Id::new(
+            crate::screens::unlock::PASSWORD_INPUT_ID,
+        ))
     }
 
     pub fn title(&self) -> String {
@@ -315,7 +321,7 @@ impl VaultApp {
                     vault.lock();
                 }
                 self.screen = Screen::Unlock(UnlockScreen::default());
-                Task::none()
+                Self::focus_unlock_input()
             }
             Message::SetTheme(pref) => {
                 self.theme_pref = pref;

@@ -6,6 +6,8 @@ use iced::{
     Alignment, Border, Color, Element, Length,
 };
 
+pub const PASSWORD_INPUT_ID: &str = "unlock-pw";
+
 /// 解锁页状态
 #[derive(Debug, Clone, Default)]
 pub struct UnlockScreen {
@@ -63,6 +65,7 @@ impl UnlockScreen {
         .align_y(Alignment::Center);
 
         let pw_input = text_input("输入主密码...", &self.password)
+            .id(text_input::Id::new(PASSWORD_INPUT_ID))
             .secure(!self.show_password)
             .on_input(Message::PasswordChanged)
             .on_submit(Message::UnlockPressed)
