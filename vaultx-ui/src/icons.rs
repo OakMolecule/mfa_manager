@@ -11,6 +11,7 @@ pub const VISIBILITY: &str = "\u{E8F4}";
 pub const VISIBILITY_OFF: &str = "\u{E8F5}";
 pub const PERSON: &str = "\u{E7FD}";
 pub const KEY: &str = "\u{E73C}";
+pub const LABEL: &str = "\u{E892}";
 pub const SEARCH: &str = "\u{E8B6}";
 pub const SETTINGS: &str = "\u{E8B8}";
 pub const DELETE: &str = "\u{E872}";

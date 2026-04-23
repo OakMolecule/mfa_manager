@@ -628,12 +628,12 @@ impl VaultApp {
                 s.view(entries)
             }
             Screen::Detail(s) => {
-                let entry = self
+                let entries = self
                     .vault
                     .as_ref()
                     .and_then(|v| v.entries().ok())
-                    .and_then(|entries| entries.iter().find(|e| e.id == s.entry_id));
-                s.view(entry, self.generator_open, &self.generator)
+                    .unwrap_or(&[]);
+                s.view(entries, self.generator_open, &self.generator)
             }
             Screen::TotpView(s) => {
                 let empty: &[_] = &[];
