@@ -4,6 +4,7 @@ use iced::widget::text;
 
 pub const LOCK: &str = "\u{E897}";
 pub const LOCK_OPEN: &str = "\u{E898}";
+pub const FOFDER_OPEN: &str = "\u{E2C7}";
 pub const WARNING: &str = "\u{E002}";
 pub const ADD_CIRCLE: &str = "\u{E147}";
 pub const CONTENT_COPY: &str = "\u{E14D}";
