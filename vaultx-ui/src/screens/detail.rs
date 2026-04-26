@@ -61,7 +61,7 @@ impl DetailScreen {
                 background: Some(iced::Background::Color(match status {
                     iced::widget::button::Status::Hovered
                     | iced::widget::button::Status::Pressed => {
-                        Color::from_rgba(1.0, 1.0, 1.0, 0.15)
+                        t::TOPBAR_SEARCH_BG
                     }
                     _ => Color::TRANSPARENT,
                 })),

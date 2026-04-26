@@ -24,9 +24,7 @@ pub fn create_sidebar<'a>(
         let icon_color = if active { t::PRIMARY } else { t::ON_SURFACE };
         let label_color = if active { t::PRIMARY } else { t::ON_SURFACE };
         let bg = if active {
-            Some(iced::Background::Color(Color::from_rgb(
-                0.733, 0.871, 0.984,
-            ))) // #BBDEFB
+            Some(iced::Background::Color(t::PRIMARY_CONTAINER)) // #BBDEFB
         } else {
             None
         };
@@ -119,7 +117,7 @@ pub fn create_sidebar<'a>(
     let sidebar_col = column![
         // 全部条目
         nav_item(
-            icons::LOCK_OPEN,
+            icons::FOFDER_OPEN,
             "全部条目",
             None,
             is_list_active,

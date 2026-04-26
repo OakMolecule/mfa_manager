@@ -23,6 +23,11 @@ pub const OUTLINE_VARIANT: iced::Color = color!(0xC5CAE9);
 pub const TOPBAR_BG: iced::Color = color!(0x1976D2);
 pub const SIDEBAR_BG: iced::Color = color!(0xE3F2FD);
 
+// 固定的顶栏搜索框背景色（避免不同平台对半透明白的混合差异）
+pub const TOPBAR_SEARCH_BG: iced::Color = color!(0x3B8BD9);
+
+// （保留）TOPBAR_SEARCH_BG 在上方定义为 0x3B8BD9
+
 pub const ERROR: iced::Color = color!(0xD32F2F);
 pub const WARNING: iced::Color = color!(0xFF6D00);
 #[allow(dead_code)]

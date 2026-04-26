@@ -142,7 +142,7 @@ impl SettingsScreen {
 
         let sidebar_col = column![
             nav_item(
-                icons::LOCK_OPEN,
+                icons::FOFDER_OPEN,
                 "全部条目".to_string(),
                 false,
                 Some(Message::NavigateTo(NavigationTarget::List))

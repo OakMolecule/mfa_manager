@@ -101,9 +101,8 @@ impl ListScreen {
                 .height(36)
                 .align_y(iced::alignment::Vertical::Center)
                 .style(|_: &iced::Theme| iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Color::from_rgba(
-                        1.0, 1.0, 1.0, 0.15,
-                    ))),
+                    // 使用 theme 中的固定搜索栏颜色，避免不同渲染器对透明白的混合差异
+                    background: Some(iced::Background::Color(t::TOPBAR_SEARCH_BG)),
                     border: Border {
                         radius: 18.0.into(),
                         width: 0.0,
@@ -402,9 +401,7 @@ impl ListScreen {
         .style(|_: &iced::Theme, status| {
             let bg = match status {
                 iced::widget::button::Status::Hovered | iced::widget::button::Status::Pressed => {
-                    Some(iced::Background::Color(Color::from_rgba(
-                        0.067, 0.463, 0.824, 0.05,
-                    )))
+                    Some(iced::Background::Color(t::SURFACE_VARIANT))
                 }
                 _ => None,
             };
@@ -559,11 +556,7 @@ impl ListScreen {
                         .size(15)
                         .color(t::ON_SURFACE_VARIANT),
                     Space::with_width(6),
-                    column![
-                        text("用户名").size(11).color(t::ON_SURFACE_VARIANT),
-                        text(&pw_data.username).size(13).color(t::ON_SURFACE),
-                    ]
-                    .spacing(1),
+                    text(&pw_data.username).size(13).color(t::ON_SURFACE),
                     Space::with_width(Length::Fill),
                     button(
                         container(
@@ -607,14 +600,10 @@ impl ListScreen {
                         .size(15)
                         .color(t::ON_SURFACE_VARIANT),
                     Space::with_width(6),
-                    column![
-                        text("密码").size(11).color(t::ON_SURFACE_VARIANT),
-                        text(pw_display)
-                            .font(iced::Font::with_name("Roboto Mono"))
-                            .size(13)
-                            .color(t::ON_SURFACE),
-                    ]
-                    .spacing(1),
+                    text(pw_display)
+                        .font(iced::Font::with_name("Roboto Mono"))
+                        .size(13)
+                        .color(t::ON_SURFACE),
                     Space::with_width(Length::Fill),
                     // 眼睛按钮：24×24，透明背景
                     button(
