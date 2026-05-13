@@ -1,0 +1,40 @@
+{
+  "name": "vaultx",
+  "version": "1.0.0",
+  "description": "VaultX - 本地优先的跨平台密码管理工具",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron . --no-sandbox",
+    "dev": "electron . --no-sandbox",
+    "build": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^41.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "totp-generator": "^1.0.1",
+    "uuid": "^11.1.0"
+  },
+  "build": {
+    "appId": "com.vaultx.app",
+    "productName": "VaultX",
+    "directories": {
+      "output": "dist"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  }
+}
