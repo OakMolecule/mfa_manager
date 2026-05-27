@@ -8,7 +8,7 @@
 ══════════════════════════════════════════ */
 [data-theme="a"] {
   --bg:#F3EFF4;--surface:#FFFBFE;--surface2:#F3EFF4;--surface3:#EDE8F5;
-  --card:#FFFBFE;--card-hover:#F5F0FC;
+  --card:#F3EFF4;--card-hover:#EDE8F5;
   --outline:#CAC4D0;--outline2:#E7E0EC;
   --primary:#6750A4;--primary-c:#EADDFF;--on-primary:#fff;--on-primary-c:#21005D;
   --on-surface:#1C1B1F;--on-surface-v:#49454F;
@@ -19,7 +19,7 @@
 }
 [data-theme="b"] {
   --bg:#07090F;--surface:#0D1220;--surface2:#131B2E;--surface3:#1A2540;
-  --card:#131B2E;--card-hover:#1E2E4A;
+  --card:#161F35;--card-hover:#1E2E4A;
   --outline:#2A3A58;--outline2:#1E2E48;
   --primary:#4F8EF7;--primary-c:#0D2A66;--on-primary:#fff;--on-primary-c:#C2D8FF;
   --on-surface:#E2F0FF;--on-surface-v:#7DAAD6;
@@ -30,7 +30,7 @@
 }
 [data-theme="c"] {
   --bg:#111318;--surface:#1E2128;--surface2:#22262F;--surface3:#2A2D36;
-  --card:#1E2128;--card-hover:#252930;
+  --card:#22262F;--card-hover:#2A2D36;
   --outline:#3C4043;--outline2:#2E3135;
   --primary:#8AB4F8;--primary-c:#1A3354;--on-primary:#0D2137;--on-primary-c:#C2D8FF;
   --on-surface:#E8EAED;--on-surface-v:#9AA0A6;
@@ -41,7 +41,7 @@
 }
 [data-theme="d"] {
   --bg:#050E08;--surface:#0D1B12;--surface2:#112016;--surface3:#16301F;
-  --card:#0D1B12;--card-hover:#162A1E;
+  --card:#112016;--card-hover:#162A1E;
   --outline:#1F3D28;--outline2:#173020;
   --primary:#00C58E;--primary-c:#003D2B;--on-primary:#002318;--on-primary-c:#A7F3D0;
   --on-surface:#ECFDF5;--on-surface-v:#6EE7B7;
@@ -52,7 +52,7 @@
 }
 [data-theme="e"] {
   --bg:#FDF0F3;--surface:#FFF8F9;--surface2:#FFF0F3;--surface3:#FFE4EA;
-  --card:#FFF8F9;--card-hover:#FFF0F3;
+  --card:#FFF0F3;--card-hover:#FFE4EA;
   --outline:#E8B4C0;--outline2:#F5D5DC;
   --primary:#C5134E;--primary-c:#FFD6E2;--on-primary:#fff;--on-primary-c:#5C0020;
   --on-surface:#25131A;--on-surface-v:#6D3849;
@@ -63,7 +63,7 @@
 }
 [data-theme="f"] {
   --bg:#0E0B06;--surface:#1A1408;--surface2:#211A0C;--surface3:#2C2310;
-  --card:#1A1408;--card-hover:#251D0F;
+  --card:#211A0C;--card-hover:#2C2310;
   --outline:#3A3018;--outline2:#2E2612;
   --primary:#F5A623;--primary-c:#3D2900;--on-primary:#1F1400;--on-primary-c:#FFE0A3;
   --on-surface:#F5EDD8;--on-surface-v:#C4A96A;
@@ -74,7 +74,7 @@
 }
 [data-theme="g"] {
   --bg:#E8F0FE;--surface:#FFFFFF;--surface2:#EEF3FF;--surface3:#E3EEFF;
-  --card:#F8FAFF;--card-hover:#EEF3FF;
+  --card:#EEF3FF;--card-hover:#E3EEFF;
   --outline:#B0C4E8;--outline2:#D3E3FD;
   --primary:#0B57D0;--primary-c:#C2E7FF;--on-primary:#fff;--on-primary-c:#001D35;
   --on-surface:#001D35;--on-surface-v:#004A77;
@@ -813,11 +813,6 @@ body {
 ══════════════════════════════════════════ */
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
 
 /* ── 顶栏 ───────────────────────────────────────────────────────────────── */
 .topbar {

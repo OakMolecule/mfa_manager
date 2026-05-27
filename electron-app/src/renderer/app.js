@@ -428,24 +428,42 @@ function wireTotpCard(card, entry) {
 
 function wirePasswordCard(card, entry) {
   const pwDisplay = card.querySelector('.pw-display');
-  const copyChip = card.querySelector('.copy-chip');
+  const copyChip = card.querySelector('.card-r2-pw .copy-chip');
   let pwVisible = false;
 
   card.onclick = (e) => {
     if (e.target.closest('.menu-btn,.ctx-menu')) return;
 
-    // Password toggle
-    if (e.target.closest('.pw-toggle')) {
+    // r2 密码切换（模板中的 .pw-toggle）
+    if (e.target.closest('.card-r2-pw .pw-toggle')) {
       pwVisible = !pwVisible;
       pwDisplay.textContent = pwVisible ? (entry.password || '') : '••••••••';
       pwDisplay.classList.toggle('revealed-pw', pwVisible);
-      card.querySelector('.pw-toggle .material-icons-round').textContent = pwVisible ? 'visibility_off' : 'visibility';
+      card.querySelector('.card-r2-pw .pw-toggle .material-icons-round').textContent = pwVisible ? 'visibility_off' : 'visibility';
       return;
     }
 
-    // Copy
-    if (e.target.closest('.copy-chip')) {
+    // r2 复制
+    if (e.target.closest('.card-r2-pw .copy-chip')) {
       copyText(entry.password || '', copyChip);
+      return;
+    }
+
+    // r3 密码切换和复制（由 buildCardR3 添加）
+    if (e.target.closest('.r3-pw-toggle')) {
+      const r3Pw = card.querySelector('.r3-pw');
+      if (r3Pw) {
+        const vis = r3Pw.classList.contains('revealed-pw');
+        r3Pw.textContent = vis ? '••••••••' : (entry.password || '');
+        r3Pw.classList.toggle('masked-pw', vis);
+        r3Pw.classList.toggle('revealed-pw', !vis);
+        const icon = card.querySelector('.r3-pw-toggle .material-icons-round');
+        if (icon) icon.textContent = vis ? 'visibility' : 'visibility_off';
+      }
+      return;
+    }
+    if (e.target.closest('.r3-pw-copy')) {
+      copyText(entry.password || '');
       return;
     }
 
