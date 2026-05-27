@@ -10,7 +10,195 @@
   <link rel="stylesheet" href="styles/material-icons.css">
 </head>
 <body>
-  <div id="app" data-theme="c"></div>
+  <div id="app" data-theme="c">
+
+    <!-- Titlebar -->
+    <div class="titlebar">
+      <div class="traffic"><span class="t-r"></span><span class="t-y"></span><span class="t-g"></span></div>
+      <span class="titlebar-title">VaultX</span>
+      <div class="titlebar-right">
+        <button class="icon-btn round" id="tb-lock" title="锁定"><span class="material-icons-round">lock</span></button>
+      </div>
+    </div>
+
+    <!-- App Body -->
+    <div class="app-body">
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-nav">
+          <button class="snav-item active" data-page="accounts"><span class="material-icons-round">shield</span>账户</button>
+          <button class="snav-item" data-page="groups"><span class="material-icons-round">folder</span>分组</button>
+          <button class="snav-item" data-page="security"><span class="material-icons-round">security</span>安全</button>
+          <button class="snav-item" data-page="settings"><span class="material-icons-round">settings</span>设置</button>
+        </div>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-sec-label">分类</div>
+        <div class="sidebar-cats" id="sidebar-cats"></div>
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-stats" id="sidebar-stats"></div>
+        <div class="sidebar-bottom">
+          <button class="sidebar-add-btn" id="btn-add-entry"><span class="material-icons-round">add</span>添加账户</button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="content-toolbar" id="content-toolbar">
+          <div class="content-title-group">
+            <span class="content-title" id="ct-title">账户</span>
+            <span class="content-sub" id="ct-sub"></span>
+          </div>
+          <div class="toolbar-search" id="toolbar-search">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="search-input" placeholder="搜索账户…">
+          </div>
+          <button class="icon-btn" id="btn-view-toggle" title="切换视图"><span class="material-icons-round">grid_view</span></button>
+          <button class="icon-btn" id="btn-import" title="导入"><span class="material-icons-round">upload</span></button>
+          <button class="icon-btn" id="btn-export" title="导出"><span class="material-icons-round">download</span></button>
+        </div>
+        <div class="d-page active" id="d-page-accounts"></div>
+        <div class="d-page" id="d-page-groups"></div>
+        <div class="d-page" id="d-page-security"></div>
+        <div class="d-page" id="d-page-settings"></div>
+      </div>
+    </div>
+
+    <!-- Modal Sheet (Add / Edit) -->
+    <div class="scrim" id="scrim">
+      <div class="sheet" id="sheet">
+        <div class="sheet-top">
+          <span class="sheet-title" id="sheet-title">添加账户</span>
+          <button class="sheet-close" id="sheet-close"><span class="material-icons-round">close</span></button>
+        </div>
+        <div class="form" id="sheet-form">
+          <div class="form-label-sm">图标</div>
+          <div class="icon-picker-row" id="icon-picker"></div>
+          <input type="hidden" id="f-icon" value="🔐">
+          <div class="type-toggle">
+            <button class="type-btn active" data-t="totp"><span class="material-icons-round">lock_clock</span>TOTP</button>
+            <button class="type-btn" data-t="password"><span class="material-icons-round">key</span>密码</button>
+          </div>
+          <input type="hidden" id="f-type" value="totp">
+          <div class="row2">
+            <div class="field"><input type="text" id="f-issuer" placeholder=" "><label>服务名称 *</label></div>
+            <div class="field"><input type="text" id="f-label" placeholder=" "><label>标签</label></div>
+          </div>
+          <div class="field"><input type="text" id="f-username" placeholder=" "><label>用户名 / 邮箱</label></div>
+          <div class="form-totp-only" id="form-totp-only">
+            <div class="field"><input type="text" id="f-secret" placeholder=" "><label>密钥 (Base32) *</label></div>
+            <div class="row2">
+              <div class="field"><select id="f-algo"><option>SHA1</option><option>SHA256</option><option>SHA512</option></select></div>
+              <div class="field"><select id="f-period"><option value="30">30s</option><option value="60">60s</option></select></div>
+            </div>
+          </div>
+          <div class="field-pw" id="pw-field">
+            <input type="password" id="f-password" placeholder=" ">
+            <label>密码</label>
+            <div class="pw-actions">
+              <button type="button" class="pw-act" id="pw-eye"><span class="material-icons-round">visibility</span></button>
+              <button type="button" class="pw-act" id="pw-gen" title="生成密码"><span class="material-icons-round">autorenew</span></button>
+            </div>
+          </div>
+          <div class="field">
+            <select id="f-cat">
+              <option value="work">工作</option>
+              <option value="finance">财务</option>
+              <option value="personal">个人</option>
+            </select>
+          </div>
+          <button class="btn-fill" id="btn-save-entry">
+            <span class="material-icons-round">add</span>添加账户
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Dialog -->
+    <div id="confirm-overlay" style="display:none" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-title" id="confirm-title">确认</div>
+        <div class="modal-msg" id="confirm-msg"></div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" id="confirm-cancel">取消</button>
+          <button class="modal-btn modal-btn-danger" id="confirm-ok">确认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lock Overlay -->
+    <div class="lock-ov" id="lock-ov"></div>
+
+    <!-- Snackbar -->
+    <div class="snack" id="snack">
+      <span class="snack-msg"></span>
+      <button class="snack-act" style="display:none"></button>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <template id="tpl-card-totp">
+    <div class="card">
+      <div class="card-in">
+        <div class="card-r1">
+          <div class="avatar"></div>
+          <div class="card-txt">
+            <div class="card-issuer"></div>
+            <div class="card-label"></div>
+          </div>
+          <button class="menu-btn"><span class="material-icons-round">more_vert</span></button>
+          <div class="ctx-menu">
+            <button class="ctx-item" data-action="edit"><span class="material-icons-round">edit</span>编辑</button>
+            <div class="ctx-divider"></div>
+            <button class="ctx-item danger" data-action="delete"><span class="material-icons-round">delete</span>删除</button>
+          </div>
+        </div>
+        <div class="card-r2">
+          <span class="otp masked">• • • • • •</span>
+          <span class="reveal-hint"><span class="material-icons-round">visibility</span>点击显示</span>
+          <button class="copy-chip"><span class="material-icons-round">content_copy</span>复制</button>
+          <div class="timer-wrap" style="display:none">
+            <svg class="timer-svg" width="38" height="38" viewBox="0 0 38 38">
+              <circle class="t-bg" cx="19" cy="19" r="16"/>
+              <circle class="t-ring" cx="19" cy="19" r="16"
+                stroke-dasharray="100.53" stroke-dashoffset="100.53" stroke="var(--primary)"/>
+            </svg>
+            <div class="t-num" style="color:var(--primary)">30</div>
+          </div>
+        </div>
+        <div class="card-r3"></div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-card-pw">
+    <div class="card">
+      <div class="card-in">
+        <div class="card-r1">
+          <div class="avatar"></div>
+          <div class="card-txt">
+            <div class="card-issuer"></div>
+            <div class="card-label"></div>
+          </div>
+          <button class="menu-btn"><span class="material-icons-round">more_vert</span></button>
+          <div class="ctx-menu">
+            <button class="ctx-item" data-action="edit"><span class="material-icons-round">edit</span>编辑</button>
+            <div class="ctx-divider"></div>
+            <button class="ctx-item danger" data-action="delete"><span class="material-icons-round">delete</span>删除</button>
+          </div>
+        </div>
+        <div class="card-r2">
+          <div class="card-r2-pw">
+            <span class="pw-display">••••••••</span>
+            <button class="pw-toggle"><span class="material-icons-round">visibility</span></button>
+            <button class="copy-chip"><span class="material-icons-round">content_copy</span>复制</button>
+          </div>
+        </div>
+        <div class="card-r3"></div>
+      </div>
+    </div>
+  </template>
+
   <script src="totp.js"></script>
   <script src="app.js"></script>
 </body>

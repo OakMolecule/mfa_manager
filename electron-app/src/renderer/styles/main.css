@@ -1290,8 +1290,8 @@ body {
   z-index: 1000;
 }
 .modal {
-  background: var(--card-bg);
-  border-radius: var(--radius-dialog);
+  background: var(--surface);
+  border-radius: 20px;
   padding: 28px 32px;
   max-width: 480px;
   width: 90%;
