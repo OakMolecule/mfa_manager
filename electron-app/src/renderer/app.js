@@ -193,7 +193,7 @@ function navigatePage(page) {
   S.page = page;
   document.querySelectorAll('.snav-item[data-page]').forEach(b =>
     b.classList.toggle('active', b.dataset.page === page));
-  ['accounts','groups','security','settings'].forEach(p => {
+  ['accounts', 'groups', 'security', 'settings'].forEach(p => {
     const el = document.getElementById('d-page-' + p);
     if (el) el.classList.toggle('active', p === page);
   });
@@ -274,6 +274,7 @@ function getFilteredEntries() {
     (e.issuer || '').toLowerCase().includes(S.searchQ) ||
     (e.label || '').toLowerCase().includes(S.searchQ) ||
     (e.username || '').toLowerCase().includes(S.searchQ));
+    console.log(list)
   return list;
 }
 
@@ -293,7 +294,7 @@ function renderAccountsPage() {
   }
 
   let html = '<div class="account-list">';
-  ['work','finance','personal'].forEach(cat => {
+  ['work', 'finance', 'personal'].forEach(cat => {
     const items = groups[cat];
     if (!items || items.length === 0) return;
     html += `<div class="sec-hd">
@@ -398,7 +399,7 @@ function wireCard(card, entry) {
     };
     card.querySelector('.copy-chip').onclick = (e) => {
       e.stopPropagation();
-      const code = card.querySelector('.otp').textContent.replace(/\s/g,'');
+      const code = card.querySelector('.otp').textContent.replace(/\s/g, '');
       copyText(code, card.querySelector('.copy-chip'));
     };
   } else {
@@ -441,8 +442,8 @@ function revealTOTP(card, entry) {
     try {
       const r = await window.TotpUtil.computeTotp(conf);
       const d = conf.digits || 6;
-      otpEl.textContent = d === 6 ? r.code.slice(0,3) + ' ' + r.code.slice(3) : r.code;
-      otpEl.classList.remove('masked','warn','danger');
+      otpEl.textContent = d === 6 ? r.code.slice(0, 3) + ' ' + r.code.slice(3) : r.code;
+      otpEl.classList.remove('masked', 'warn', 'danger');
       if (r.remaining <= 5) otpEl.classList.add('danger');
       else if (r.remaining <= 10) otpEl.classList.add('warn');
       const p = conf.period || 30;
@@ -450,7 +451,7 @@ function revealTOTP(card, entry) {
       const col = r.remaining <= 5 ? 'var(--danger)' : r.remaining <= 10 ? 'var(--warn)' : 'var(--primary)';
       ringEl.style.stroke = col; numEl.style.color = col;
       numEl.textContent = r.remaining;
-    } catch(e) { otpEl.textContent = '错误'; }
+    } catch (e) { otpEl.textContent = '错误'; }
   }
 
   update();
@@ -472,8 +473,8 @@ function toggleViewMode() {
 /* ══════════════════════════════════════
    ADD / EDIT SHEET
 ══════════════════════════════════════ */
-const ICONS = ['🔐','🏦','📧','🐙','🍎','🤖','🎮','🛒','💼','🏠','💳','🌐'];
-const CATS_LIST = [{ v:'work', l:'工作' },{ v:'finance', l:'财务' },{ v:'personal', l:'个人' }];
+const ICONS = ['🔐', '🏦', '📧', '🐙', '🍎', '🤖', '🎮', '🛒', '💼', '🏠', '💳', '🌐'];
+const CATS_LIST = [{ v: 'work', l: '工作' }, { v: 'finance', l: '财务' }, { v: 'personal', l: '个人' }];
 
 function openAddSheet() { S.editingEntry = null; openSheet(null); }
 function openEditSheet(entry) { S.editingEntry = entry; openSheet(entry); }
@@ -498,28 +499,28 @@ function buildSheetHTML(isEdit, entry, type) {
   <div class="form">
     <div class="form-label-sm">图标</div>
     <div class="icon-picker-row" id="icon-picker">
-      ${ICONS.map(ic => `<div class="icon-opt${ic===curIcon?' picked':''}" data-icon="${ic}">${ic}</div>`).join('')}
+      ${ICONS.map(ic => `<div class="icon-opt${ic === curIcon ? ' picked' : ''}" data-icon="${ic}">${ic}</div>`).join('')}
     </div>
     <input type="hidden" id="f-icon" value="${curIcon}">
     <div class="type-toggle">
-      <button class="type-btn${type==='totp'?' active':''}" data-t="totp"><span class="material-icons-round">lock_clock</span>TOTP</button>
-      <button class="type-btn${type==='password'?' active':''}" data-t="password"><span class="material-icons-round">key</span>密码</button>
+      <button class="type-btn${type === 'totp' ? ' active' : ''}" data-t="totp"><span class="material-icons-round">lock_clock</span>TOTP</button>
+      <button class="type-btn${type === 'password' ? ' active' : ''}" data-t="password"><span class="material-icons-round">key</span>密码</button>
     </div>
     <input type="hidden" id="f-type" value="${type}">
     <div class="row2">
-      <div class="field"><input type="text" id="f-issuer" placeholder=" " value="${escHtml(entry?entry.issuer||'':'')}"><label>服务名称 *</label></div>
-      <div class="field"><input type="text" id="f-label" placeholder=" " value="${escHtml(entry?entry.label||'':'')}"><label>标签</label></div>
+      <div class="field"><input type="text" id="f-issuer" placeholder=" " value="${escHtml(entry ? entry.issuer || '' : '')}"><label>服务名称 *</label></div>
+      <div class="field"><input type="text" id="f-label" placeholder=" " value="${escHtml(entry ? entry.label || '' : '')}"><label>标签</label></div>
     </div>
     <div class="field"><input type="text" id="f-username" placeholder=" " value="${escHtml(entry ? entry.username || '' : '')}"><label>用户名 / 邮箱</label></div>
-    <div class="form-totp-only${type==='password'?' hidden':''}">
+    <div class="form-totp-only${type === 'password' ? ' hidden' : ''}">
       <div class="field"><input type="text" id="f-secret" placeholder=" " value="${escHtml(entry && entry.totp ? entry.totp.secret || '' : entry ? entry.secret || '' : '')}"><label>密钥 (Base32) *</label></div>
       <div class="row2">
-        <div class="field"><select id="f-algo">${['SHA1','SHA256','SHA512'].map(a=>`<option${entry&&entry.totp&&entry.totp.algorithm===a?' selected':''}>${a}</option>`).join('')}</select></div>
-        <div class="field"><select id="f-period">${[30,60].map(p=>`<option value="${p}"${entry&&entry.totp&&entry.totp.period===p?' selected':''}>${p}s</option>`).join('')}</select></div>
+        <div class="field"><select id="f-algo">${['SHA1', 'SHA256', 'SHA512'].map(a => `<option${entry && entry.totp && entry.totp.algorithm === a ? ' selected' : ''}>${a}</option>`).join('')}</select></div>
+        <div class="field"><select id="f-period">${[30, 60].map(p => `<option value="${p}"${entry && entry.totp && entry.totp.period === p ? ' selected' : ''}>${p}s</option>`).join('')}</select></div>
       </div>
     </div>
-    <div class="field-pw" id="pw-field" style="${type==='totp'?'display:none':''}">
-      <input type="password" id="f-password" placeholder=" " value="${escHtml(entry&&entry.password?entry.password:'')}">
+    <div class="field-pw" id="pw-field" style="${type === 'totp' ? 'display:none' : ''}">
+      <input type="password" id="f-password" placeholder=" " value="${escHtml(entry && entry.password ? entry.password : '')}">
       <label>密码</label>
       <div class="pw-actions">
         <button type="button" class="pw-act" id="pw-eye"><span class="material-icons-round">visibility</span></button>
@@ -527,10 +528,10 @@ function buildSheetHTML(isEdit, entry, type) {
       </div>
     </div>
     <div class="field">
-      <select id="f-cat">${CATS_LIST.map(c=>`<option value="${c.v}"${curCat===c.v?' selected':''}>${c.l}</option>`).join('')}</select>
+      <select id="f-cat">${CATS_LIST.map(c => `<option value="${c.v}"${curCat === c.v ? ' selected' : ''}>${c.l}</option>`).join('')}</select>
     </div>
     <button class="btn-fill" id="btn-save-entry">
-      <span class="material-icons-round">${isEdit?'save':'add'}</span>${isEdit?'保存更改':'添加账户'}
+      <span class="material-icons-round">${isEdit ? 'save' : 'add'}</span>${isEdit ? '保存更改' : '添加账户'}
     </button>
   </div>`;
 }
@@ -563,7 +564,7 @@ function wireSheet(isEdit, entry) {
   };
   const pwGen = document.getElementById('pw-gen');
   if (pwGen) pwGen.onclick = async () => {
-    const pw = await window.vaultxAPI.generator.generate({ length:20, upper:true, lower:true, numbers:true, symbols:true });
+    const pw = await window.vaultxAPI.generator.generate({ length: 20, upper: true, lower: true, numbers: true, symbols: true });
     if (pwInput) { pwInput.value = pw; pwInput.type = 'text'; }
   };
   document.getElementById('btn-save-entry').onclick = () => saveEntry(isEdit, entry);
@@ -575,10 +576,12 @@ async function saveEntry(isEdit, existing) {
   const secret = document.getElementById('f-secret') ? document.getElementById('f-secret').value.trim() : '';
   if (!issuer) { showSnack('请填写服务名称'); return; }
   if (type === 'totp' && !secret) { showSnack('请填写 TOTP 密钥'); return; }
-  const catMap = { work:'Work', finance:'Finance', personal:'Personal' };
+  const catMap = { work: 'Work', finance: 'Finance', personal: 'Personal' };
   const entryData = {
+    id: crypto.randomUUID(),
     icon: document.getElementById('f-icon').value,
     issuer,
+    title: issuer,
     label: document.getElementById('f-label').value.trim(),
     username: document.getElementById('f-username').value.trim(),
     category: catMap[document.getElementById('f-cat').value] || 'Personal',
@@ -590,11 +593,14 @@ async function saveEntry(isEdit, existing) {
     entryData.password = document.getElementById('f-password').value;
   }
   try {
-    if (isEdit && existing) { await window.vaultxAPI.vault.updateEntry(existing.id, entryData); showSnack('账户已更新'); }
-    else { await window.vaultxAPI.vault.addEntry(entryData); showSnack('账户已添加'); }
+    if (isEdit && existing) {
+      await window.vaultxAPI.vault.updateEntry(existing.id, entryData); showSnack('账户已更新');
+    } else {
+      await window.vaultxAPI.vault.addEntry(entryData); showSnack('账户已添加');
+    }
     closeSheet();
     await refreshEntries();
-  } catch(e) { showSnack('保存失败: ' + (e.message || e)); }
+  } catch (e) { showSnack('保存失败: ' + (e.message || e)); }
 }
 
 function closeSheet() { document.getElementById('scrim').classList.remove('open'); }
@@ -617,7 +623,8 @@ function confirmDelete(entry) {
 }
 
 async function refreshEntries() {
-  S.entries = await window.vaultxAPI.vault.getEntries();
+  const ge = await window.vaultxAPI.vault.getEntries();
+  S.entries = ge.ok ? ge.entries : [];
   renderSidebarCats();
   renderSidebarStats();
   if (S.page === 'accounts') renderAccountsPage();
@@ -630,9 +637,9 @@ function renderGroupsPage() {
   const page = document.getElementById('d-page-groups');
   if (!page) return;
   const groups = [
-    { key:'work', label:'工作', icon:'work', color:'var(--cat-work)', desc:'工作相关账户' },
-    { key:'finance', label:'财务', icon:'account_balance', color:'var(--cat-finance)', desc:'银行、支付、理财' },
-    { key:'personal', label:'个人', icon:'person', color:'var(--cat-personal)', desc:'个人与社交账户' },
+    { key: 'work', label: '工作', icon: 'work', color: 'var(--cat-work)', desc: '工作相关账户' },
+    { key: 'finance', label: '财务', icon: 'account_balance', color: 'var(--cat-finance)', desc: '银行、支付、理财' },
+    { key: 'personal', label: '个人', icon: 'person', color: 'var(--cat-personal)', desc: '个人与社交账户' },
   ];
   page.innerHTML = '<div class="d-group-grid">' + groups.map(g => {
     const count = S.entries.filter(e => normalizeCategory(e.category) === g.key).length;
@@ -689,13 +696,13 @@ function renderSecurityPage() {
    SETTINGS PAGE
 ══════════════════════════════════════ */
 const THEME_META = [
-  { t:'a', name:'紫罗兰', c1:'#FFFBFE', c2:'#6750A4' },
-  { t:'b', name:'深蓝', c1:'#0D1220', c2:'#4F8EF7' },
-  { t:'c', name:'碳灰', c1:'#1E2128', c2:'#8AB4F8' },
-  { t:'d', name:'翠绿', c1:'#0D1B12', c2:'#00C58E' },
-  { t:'e', name:'玫红', c1:'#1A0D14', c2:'#F06292' },
-  { t:'f', name:'琥珀', c1:'#1A1408', c2:'#F5A623' },
-  { t:'g', name:'日光', c1:'#FFFFFF', c2:'#0B57D0' },
+  { t: 'a', name: '紫罗兰', c1: '#FFFBFE', c2: '#6750A4' },
+  { t: 'b', name: '深蓝', c1: '#0D1220', c2: '#4F8EF7' },
+  { t: 'c', name: '碳灰', c1: '#1E2128', c2: '#8AB4F8' },
+  { t: 'd', name: '翠绿', c1: '#0D1B12', c2: '#00C58E' },
+  { t: 'e', name: '玫红', c1: '#1A0D14', c2: '#F06292' },
+  { t: 'f', name: '琥珀', c1: '#1A1408', c2: '#F5A623' },
+  { t: 'g', name: '日光', c1: '#FFFFFF', c2: '#0B57D0' },
 ];
 
 function renderSettingsPage() {
@@ -703,7 +710,7 @@ function renderSettingsPage() {
   if (!page) return;
   const cur = getAppEl().dataset.theme || 'c';
   const swatches = THEME_META.map(tm =>
-    `<button class="th-btn${tm.t===cur?' active':''}" data-t="${tm.t}">
+    `<button class="th-btn${tm.t === cur ? ' active' : ''}" data-t="${tm.t}">
       <div class="th-swatch"><div class="th-half" style="background:${tm.c1}"></div><div class="th-half" style="background:${tm.c2}"></div></div>
       <span class="th-name">${tm.name}</span>
     </button>`).join('');
@@ -717,11 +724,11 @@ function renderSettingsPage() {
         <div class="settings-card-hd">安全</div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">自动锁定</div><div class="s-sub">闲置后自动锁定</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-lock">${[1,5,10,30,60,0].map(m=>`<option value="${m*60}"${S.settings.autoLockTimeout===(m*60)?' selected':''}>${m===0?'从不':m<60?m+'分钟':'1小时'}</option>`).join('')}</select></div>
+          <div class="s-ctrl"><select class="s-select" id="st-lock">${[1, 5, 10, 30, 60, 0].map(m => `<option value="${m * 60}"${S.settings.autoLockTimeout === (m * 60) ? ' selected' : ''}>${m === 0 ? '从不' : m < 60 ? m + '分钟' : '1小时'}</option>`).join('')}</select></div>
         </div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">剪贴板清除</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-clip">${[15,30,60,120].map(s=>`<option value="${s}"${S.settings.clipboardClearSeconds===s?' selected':''}>${s}秒</option>`).join('')}</select></div>
+          <div class="s-ctrl"><select class="s-select" id="st-clip">${[15, 30, 60, 120].map(s => `<option value="${s}"${S.settings.clipboardClearSeconds === s ? ' selected' : ''}>${s}秒</option>`).join('')}</select></div>
         </div>
       </div>
       <div class="settings-card">
@@ -762,11 +769,11 @@ async function saveSettings() {
    IMPORT / EXPORT
 ══════════════════════════════════════ */
 async function importVault() {
-  const path = await window.vaultxAPI.dialog.openFile({ filters:[{name:'VaultX',extensions:['vaultx','json']}] });
+  const path = await window.vaultxAPI.dialog.openFile({ filters: [{ name: 'VaultX', extensions: ['vaultx', 'json'] }] });
   if (path) showSnack('导入功能待实现');
 }
 async function exportVault() {
-  const path = await window.vaultxAPI.dialog.saveFile({ defaultPath:'vaultx-backup.json', filters:[{name:'JSON',extensions:['json']}] });
+  const path = await window.vaultxAPI.dialog.saveFile({ defaultPath: 'vaultx-backup.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
   if (path) showSnack('导出功能待实现');
 }
 
@@ -795,7 +802,7 @@ function renderLock() {
       <button class="lock-btn" id="lock-submit">解锁</button>
       <div class="lock-vault-row">
         <span class="material-icons-round">storage</span>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(S.vaultPath||'未知路径')}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(S.vaultPath || '未知路径')}</span>
         <button class="lock-link" id="lock-change">切换</button>
       </div>
     </div>`;
@@ -814,11 +821,11 @@ function renderLock() {
   pwInput.onkeydown = (e) => { if (e.key === 'Enter') submitBtn.click(); };
   submitBtn.onclick = async () => {
     const pw = pwInput.value;
-    if (!pw) { errEl.textContent='请输入密码'; errEl.classList.add('show'); return; }
+    if (!pw) { errEl.textContent = '请输入密码'; errEl.classList.add('show'); return; }
     submitBtn.disabled = true; submitBtn.textContent = '解锁中…';
     try {
       const openR = await window.vaultxAPI.vault.open(S.vaultPath);
-      if (!openR.ok) { errEl.textContent = '无法打开金库: ' + openR.error; errEl.classList.add('show'); submitBtn.disabled=false; submitBtn.textContent='解锁'; return; }
+      if (!openR.ok) { errEl.textContent = '无法打开金库: ' + openR.error; errEl.classList.add('show'); submitBtn.disabled = false; submitBtn.textContent = '解锁'; return; }
       const unlockR = await window.vaultxAPI.vault.unlock(pw);
       if (unlockR.ok) {
         lockOv.classList.remove('show');
@@ -832,7 +839,7 @@ function renderLock() {
         pwInput.value = ''; pwInput.focus();
         submitBtn.disabled = false; submitBtn.textContent = '解锁';
       }
-    } catch(e) {
+    } catch (e) {
       errEl.textContent = '解锁失败: ' + (e.message || e); errEl.classList.add('show');
       submitBtn.disabled = false; submitBtn.textContent = '解锁';
     }
@@ -852,7 +859,7 @@ async function initVault() {
 }
 
 async function changeVault() {
-  const path = await window.vaultxAPI.dialog.openFile({ filters:[{name:'VaultX',extensions:['vaultx']}] });
+  const path = await window.vaultxAPI.dialog.openFile({ filters: [{ name: 'VaultX', extensions: ['vaultx'] }] });
   if (path) { S.vaultPath = path; localStorage.setItem('vaultPath', path); initVault(); }
 }
 
@@ -880,19 +887,19 @@ function renderCreateVault() {
   lockOv.classList.add('show');
   const pw1 = lockOv.querySelector('#create-pw'), pw2 = lockOv.querySelector('#create-pw2');
   const errEl = lockOv.querySelector('#create-err'), eye = lockOv.querySelector('#create-eye');
-  eye.onclick = () => { const s = pw1.type==='password'; pw1.type = s?'text':'password'; eye.querySelector('.material-icons-round').textContent = s?'visibility_off':'visibility'; };
+  eye.onclick = () => { const s = pw1.type === 'password'; pw1.type = s ? 'text' : 'password'; eye.querySelector('.material-icons-round').textContent = s ? 'visibility_off' : 'visibility'; };
   lockOv.querySelector('#create-choose').onclick = async () => {
-    const path = await window.vaultxAPI.dialog.saveFile({ defaultPath:'vault.vaultx', filters:[{name:'VaultX',extensions:['vaultx']}] });
-    if (path) { S.vaultPath = path; localStorage.setItem('vaultPath', path); showSnack('位置: '+path); }
+    const path = await window.vaultxAPI.dialog.saveFile({ defaultPath: 'vault.vaultx', filters: [{ name: 'VaultX', extensions: ['vaultx'] }] });
+    if (path) { S.vaultPath = path; localStorage.setItem('vaultPath', path); showSnack('位置: ' + path); }
   };
   lockOv.querySelector('#create-submit').onclick = async () => {
-    const p1=pw1.value, p2=pw2.value;
-    if (!p1){errEl.textContent='请输入密码';errEl.classList.add('show');return;}
-    if (p1!==p2){errEl.textContent='两次密码不一致';errEl.classList.add('show');return;}
-    if (p1.length<8){errEl.textContent='密码至少 8 位';errEl.classList.add('show');return;}
-    const path = S.vaultPath || (Date.now()+'.vaultx');
+    const p1 = pw1.value, p2 = pw2.value;
+    if (!p1) { errEl.textContent = '请输入密码'; errEl.classList.add('show'); return; }
+    if (p1 !== p2) { errEl.textContent = '两次密码不一致'; errEl.classList.add('show'); return; }
+    if (p1.length < 8) { errEl.textContent = '密码至少 8 位'; errEl.classList.add('show'); return; }
+    const path = S.vaultPath || (Date.now() + '.vaultx');
     const r = await window.vaultxAPI.vault.create(path, p1);
-    if (!r.ok) { errEl.textContent='创建失败: '+(r.error||'未知错误'); errEl.classList.add('show'); return; }
+    if (!r.ok) { errEl.textContent = '创建失败: ' + (r.error || '未知错误'); errEl.classList.add('show'); return; }
     S.vaultPath = path; localStorage.setItem('vaultPath', path);
     lockOv.classList.remove('show');
     S.vaultOpen = true; S.entries = [];
@@ -907,7 +914,7 @@ function renderCreateVault() {
    UTILS
 ══════════════════════════════════════ */
 function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /* ══════════════════════════════════════
