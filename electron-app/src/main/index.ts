@@ -1,21 +1,21 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog, clipboard, nativeTheme } = require('electron');
-const path = require('path');
-const VaultManager = require('./vault');
-const { generatePassword, evaluatePasswordStrength } = require('./generator');
+import { app, BrowserWindow, ipcMain, dialog, clipboard, nativeTheme } from 'electron';
+import path from 'path';
+import fs from 'fs';
+import { VaultManager } from './vault';
+import { generatePassword, evaluatePasswordStrength } from './generator';
 
-// ── 安全设置 ──────────────────────────────────────────────────────────────
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
-let mainWindow = null;
-let vaultManager = new VaultManager();
-let clipboardTimer = null;
-let autoLockTimer = null;
-let autoLockTimeout = 300; // 默认 5 分钟（秒）
-let clipboardClearSeconds = 30; // 默认 30 秒
+let mainWindow: BrowserWindow | null = null;
+const vaultManager = new VaultManager();
+let clipboardTimer: ReturnType<typeof setTimeout> | null = null;
+let autoLockTimer: ReturnType<typeof setTimeout> | null = null;
+let autoLockTimeout = 300;
+let clipboardClearSeconds = 30;
 
-function createWindow() {
+function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 720,
@@ -31,7 +31,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  mainWindow.loadFile(path.join(__dirname, '../../src/renderer/index.html'));
   mainWindow.webContents.openDevTools();
 
   mainWindow.on('closed', () => {
@@ -41,7 +41,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -51,8 +50,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// ── 重置自动锁定计时器 ────────────────────────────────────────────────────
-function resetAutoLockTimer() {
+function resetAutoLockTimer(): void {
   if (autoLockTimer) clearTimeout(autoLockTimer);
   if (autoLockTimeout > 0 && vaultManager.isUnlocked()) {
     autoLockTimer = setTimeout(() => {
@@ -64,40 +62,40 @@ function resetAutoLockTimer() {
 
 // ── IPC: 金库操作 ─────────────────────────────────────────────────────────
 
-ipcMain.handle('vault:check', async (_event, filePath) => {
+ipcMain.handle('vault:check', async (_event, filePath: string) => {
   try {
-    const exists = require('fs').existsSync(filePath);
+    const exists = fs.existsSync(filePath);
     return { ok: true, exists };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
 
-ipcMain.handle('vault:open', async (_event, filePath) => {
+ipcMain.handle('vault:open', async (_event, filePath: string) => {
   try {
     await vaultManager.open(filePath);
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
 
-ipcMain.handle('vault:create', async (_event, filePath, password) => {
+ipcMain.handle('vault:create', async (_event, filePath: string, password: string) => {
   try {
     await vaultManager.create(filePath, password);
     resetAutoLockTimer();
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
 
-ipcMain.handle('vault:unlock', async (_event, password) => {
+ipcMain.handle('vault:unlock', async (_event, password: string) => {
   try {
     await vaultManager.unlock(password);
     resetAutoLockTimer();
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
@@ -113,7 +111,7 @@ ipcMain.handle('vault:getEntries', async () => {
     const entries = vaultManager.getEntries();
     resetAutoLockTimer();
     return { ok: true, entries };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
@@ -124,7 +122,7 @@ ipcMain.handle('vault:addEntry', async (_event, entry) => {
     await vaultManager.save();
     resetAutoLockTimer();
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
@@ -135,27 +133,27 @@ ipcMain.handle('vault:updateEntry', async (_event, entry) => {
     await vaultManager.save();
     resetAutoLockTimer();
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
 
-ipcMain.handle('vault:deleteEntry', async (_event, id) => {
+ipcMain.handle('vault:deleteEntry', async (_event, id: string) => {
   try {
     vaultManager.deleteEntry(id);
     await vaultManager.save();
     resetAutoLockTimer();
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
 
-ipcMain.handle('vault:changePassword', async (_event, oldPassword, newPassword) => {
+ipcMain.handle('vault:changePassword', async (_event, oldPassword: string, newPassword: string) => {
   try {
     await vaultManager.changePassword(oldPassword, newPassword);
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
@@ -163,7 +161,7 @@ ipcMain.handle('vault:changePassword', async (_event, oldPassword, newPassword) 
 // ── IPC: 文件对话框 ───────────────────────────────────────────────────────
 
 ipcMain.handle('dialog:openFile', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
+  const result = await dialog.showOpenDialog(mainWindow!, {
     filters: [{ name: 'VaultX Files', extensions: ['vaultx'] }],
     properties: ['openFile'],
   });
@@ -171,7 +169,7 @@ ipcMain.handle('dialog:openFile', async () => {
 });
 
 ipcMain.handle('dialog:saveFile', async () => {
-  const result = await dialog.showSaveDialog(mainWindow, {
+  const result = await dialog.showSaveDialog(mainWindow!, {
     defaultPath: 'vault.vaultx',
     filters: [{ name: 'VaultX Files', extensions: ['vaultx'] }],
   });
@@ -179,7 +177,7 @@ ipcMain.handle('dialog:saveFile', async () => {
 });
 
 ipcMain.handle('dialog:exportJson', async () => {
-  const result = await dialog.showSaveDialog(mainWindow, {
+  const result = await dialog.showSaveDialog(mainWindow!, {
     defaultPath: 'vaultx-export.json',
     filters: [{ name: 'JSON Files', extensions: ['json'] }],
   });
@@ -188,14 +186,12 @@ ipcMain.handle('dialog:exportJson', async () => {
 
 // ── IPC: 剪贴板 ───────────────────────────────────────────────────────────
 
-ipcMain.handle('clipboard:write', async (_event, text) => {
+ipcMain.handle('clipboard:write', async (_event, text: string) => {
   clipboard.writeText(text);
   resetAutoLockTimer();
-  // 自动清除
   if (clipboardClearSeconds > 0) {
     if (clipboardTimer) clearTimeout(clipboardTimer);
     clipboardTimer = setTimeout(() => {
-      // 仅当剪贴板内容未被修改时清除
       if (clipboard.readText() === text) {
         clipboard.writeText('');
       }
@@ -211,7 +207,7 @@ ipcMain.handle('generator:generate', async (_event, config) => {
   return { ok: true, password };
 });
 
-ipcMain.handle('generator:evaluate', async (_event, password) => {
+ipcMain.handle('generator:evaluate', async (_event, password: string) => {
   const strength = evaluatePasswordStrength(password);
   return { ok: true, strength };
 });
@@ -228,31 +224,30 @@ nativeTheme.on('updated', () => {
 
 // ── IPC: 设置 ─────────────────────────────────────────────────────────────
 
-ipcMain.handle('settings:update', async (_event, settings) => {
+ipcMain.handle('settings:update', async (_event, settings: Record<string, unknown>) => {
   if (typeof settings.autoLockTimeout === 'number') {
-    autoLockTimeout = settings.autoLockTimeout;
+    autoLockTimeout = settings.autoLockTimeout as number;
     resetAutoLockTimer();
   }
   if (typeof settings.clipboardClearSeconds === 'number') {
-    clipboardClearSeconds = settings.clipboardClearSeconds;
+    clipboardClearSeconds = settings.clipboardClearSeconds as number;
   }
   return { ok: true };
 });
 
 // ── IPC: 导出 JSON ────────────────────────────────────────────────────────
 
-ipcMain.handle('vault:exportJson', async (_event, filePath) => {
+ipcMain.handle('vault:exportJson', async (_event, filePath: string) => {
   try {
-    const fs = require('fs');
     const entries = vaultManager.getEntries();
     fs.writeFileSync(filePath, JSON.stringify({ entries }, null, 2), 'utf-8');
     return { ok: true };
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, error: e.message };
   }
 });
 
-// ── IPC: 活动心跳（重置自动锁定计时器）──────────────────────────────────
+// ── IPC: 活动心跳 ─────────────────────────────────────────────────────────
 
 ipcMain.on('activity:ping', () => {
   resetAutoLockTimer();

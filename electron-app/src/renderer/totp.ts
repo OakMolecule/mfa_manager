@@ -7,10 +7,24 @@
 
 const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
-function base32Decode(input) {
-  if (typeof input !== 'string') throw new TypeError('base32 input must be a string');
+export interface TotpConfig {
+  secret: string;
+  algorithm?: string;
+  digits?: number;
+  period?: number;
+}
+
+export interface TotpResult {
+  code: string;
+  elapsed: number;
+  period: number;
+  remaining: number;
+  expiring: boolean;
+}
+
+function base32Decode(input: string): Uint8Array {
   const str = input.toUpperCase().replace(/=+$/, '').replace(/\s/g, '');
-  const bytes = [];
+  const bytes: number[] = [];
   let buffer = 0;
   let bitsLeft = 0;
 
@@ -27,7 +41,7 @@ function base32Decode(input) {
   return new Uint8Array(bytes);
 }
 
-function uint64ToBytes(n) {
+function uint64ToBytes(n: number): Uint8Array {
   const buf = new Uint8Array(8);
   let val = BigInt(n);
   for (let i = 7; i >= 0; i--) {
@@ -37,18 +51,18 @@ function uint64ToBytes(n) {
   return buf;
 }
 
-async function computeHotp(key, counter, digits, algorithm) {
-  const algoMap = { SHA1: 'SHA-1', SHA256: 'SHA-256', SHA512: 'SHA-512' };
+async function computeHotp(key: Uint8Array, counter: number, digits: number, algorithm: string): Promise<string> {
+  const algoMap: Record<string, string> = { SHA1: 'SHA-1', SHA256: 'SHA-256', SHA512: 'SHA-512' };
   const algoName = algoMap[algorithm] || 'SHA-1';
 
   const cryptoKey = await crypto.subtle.importKey(
-    'raw', key,
+    'raw', key as unknown as BufferSource,
     { name: 'HMAC', hash: algoName },
     false, ['sign']
   );
 
   const counterBytes = uint64ToBytes(counter);
-  const sig = await crypto.subtle.sign('HMAC', cryptoKey, counterBytes);
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, counterBytes as unknown as BufferSource);
   const hmac = new Uint8Array(sig);
 
   const offset = hmac[hmac.length - 1] & 0x0F;
@@ -62,12 +76,7 @@ async function computeHotp(key, counter, digits, algorithm) {
   return String(code).padStart(digits, '0');
 }
 
-/**
- * 计算 TOTP 验证码
- * @param {object} totpData - { secret, algorithm, digits, period }
- * @returns {Promise<{code, elapsed, period, remaining, expiring}>}
- */
-async function computeTotp(totpData) {
+export async function computeTotp(totpData: TotpConfig): Promise<TotpResult> {
   const { secret, algorithm = 'SHA1', digits = 6, period = 30 } = totpData;
   const keyBytes = base32Decode(secret);
   const now = Math.floor(Date.now() / 1000);
@@ -82,9 +91,4 @@ async function computeTotp(totpData) {
     remaining,
     expiring: remaining <= 5,
   };
-}
-
-// 导出到全局（在渲染进程中以脚本形式加载）
-if (typeof window !== 'undefined') {
-  window.TotpUtil = { computeTotp };
 }

@@ -1,15 +1,59 @@
 'use strict';
 
+import { computeTotp, type TotpConfig, type TotpResult } from './totp';
+
+/* ══════════════════════════════════════════════════════════════
+   INTERFACES
+══════════════════════════════════════════════════════════════ */
+interface Entry {
+  id: string;
+  icon?: string;
+  issuer?: string;
+  title?: string;
+  label?: string;
+  username?: string;
+  password?: string;
+  category?: string;
+  type?: 'totp' | 'password';
+  totp?: TotpConfig;
+  secret?: string;
+}
+
+interface AppSettings {
+  autoLockTimeout: number;
+  clipboardClearSeconds: number;
+  maxErrorCount: number;
+}
+
+interface AppState {
+  page: string;
+  entries: Entry[];
+  filterCat: string;
+  searchQ: string;
+  viewMode: 'grid' | 'list';
+  vaultPath: string | null;
+  vaultOpen: boolean;
+  settings: AppSettings;
+  editingEntry: Entry | null;
+}
+
+interface ThemeMeta {
+  t: string;
+  name: string;
+  c1: string;
+  c2: string;
+}
+
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS
 ══════════════════════════════════════════════════════════════ */
 const CIRC = 2 * Math.PI * 16;
 const ICONS = ['🔐', '🏦', '📧', '🐙', '🍎', '🤖', '🎮', '🛒', '💼', '🏠', '💳', '🌐'];
 const CATS = ['all', 'work', 'finance', 'personal'];
-const CAT_COLORS = { work: 'var(--cat-work)', finance: 'var(--cat-finance)', personal: 'var(--cat-personal)' };
-const CAT_LABELS = { all: '全部', work: '工作', finance: '财务', personal: '个人' };
-const CAT_MAP = { work: 'Work', finance: 'Finance', personal: 'Personal' };
-const THEME_META = [
+const CAT_COLORS: Record<string, string> = { work: 'var(--cat-work)', finance: 'var(--cat-finance)', personal: 'var(--cat-personal)' };
+const CAT_LABELS: Record<string, string> = { all: '全部', work: '工作', finance: '财务', personal: '个人' };
+const CAT_MAP: Record<string, string> = { work: 'Work', finance: 'Finance', personal: 'Personal' };
+const THEME_META: ThemeMeta[] = [
   { t: 'a', name: '紫罗兰', c1: '#FFFBFE', c2: '#6750A4' },
   { t: 'b', name: '深蓝',   c1: '#0D1220', c2: '#4F8EF7' },
   { t: 'c', name: '碳灰',   c1: '#1E2128', c2: '#8AB4F8' },
@@ -22,7 +66,7 @@ const THEME_META = [
 /* ══════════════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════════════ */
-const S = {
+const S: AppState = {
   page: 'accounts',
   entries: [],
   filterCat: 'all',
@@ -34,20 +78,20 @@ const S = {
   editingEntry: null,
 };
 
-const cardTimers = new Map();
+const cardTimers = new Map<string, ReturnType<typeof setInterval>>();
 
 /* ══════════════════════════════════════════════════════════════
    UTILITIES
 ══════════════════════════════════════════════════════════════ */
-function $(sel) { return document.querySelector(sel); }
-function $$(sel) { return document.querySelectorAll(sel); }
-function getAppEl() { return document.getElementById('app'); }
+function $(sel: string): HTMLElement | null { return document.querySelector(sel); }
+function $$(sel: string): NodeListOf<HTMLElement> { return document.querySelectorAll(sel); }
+function getAppEl(): HTMLElement { return document.getElementById('app')!; }
 
-function escHtml(str) {
+function escHtml(str: string): string {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function normalizeCategory(cat) {
+function normalizeCategory(cat?: string): string {
   if (!cat) return 'personal';
   const c = cat.toLowerCase();
   if (c === 'work' || c === '工作') return 'work';
@@ -58,13 +102,13 @@ function normalizeCategory(cat) {
 /* ══════════════════════════════════════════════════════════════
    SNACKBAR & CLIPBOARD
 ══════════════════════════════════════════════════════════════ */
-let snackTimer = null;
+let snackTimer: ReturnType<typeof setTimeout> | null = null;
 
-function showSnack(msg, action, onAction) {
+function showSnack(msg: string, action?: string, onAction?: () => void): void {
   const snack = document.getElementById('snack');
   if (!snack) return;
-  snack.querySelector('.snack-msg').textContent = msg;
-  const act = snack.querySelector('.snack-act');
+  snack.querySelector('.snack-msg')!.textContent = msg;
+  const act = snack.querySelector('.snack-act') as HTMLElement;
   if (action && onAction) {
     act.textContent = action;
     act.style.display = '';
@@ -77,7 +121,7 @@ function showSnack(msg, action, onAction) {
   snackTimer = setTimeout(() => snack.classList.remove('show'), 2800);
 }
 
-async function copyText(text, feedbackEl) {
+async function copyText(text: string, feedbackEl?: HTMLElement | null): Promise<void> {
   await window.vaultxAPI.clipboard.write(text);
   showSnack('已复制，将在 30 秒后自动清除剪贴板');
   if (feedbackEl) {
@@ -89,7 +133,7 @@ async function copyText(text, feedbackEl) {
 /* ══════════════════════════════════════════════════════════════
    THEME
 ══════════════════════════════════════════════════════════════ */
-function setTheme(t) {
+function setTheme(t: string): void {
   getAppEl().dataset.theme = t;
   localStorage.setItem('theme', t);
   $$('.th-btn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
@@ -102,7 +146,7 @@ function setTheme(t) {
 /* ══════════════════════════════════════════════════════════════
    ACTIVITY & AUTO-LOCK LISTENER
 ══════════════════════════════════════════════════════════════ */
-['mousemove', 'keydown', 'click', 'scroll'].forEach(ev =>
+(['mousemove', 'keydown', 'click', 'scroll'] as const).forEach(ev =>
   document.addEventListener(ev, () => window.vaultxAPI.pingActivity(), { passive: true }));
 
 window.vaultxAPI.onVaultLocked(() => {
@@ -113,33 +157,29 @@ window.vaultxAPI.onVaultLocked(() => {
 });
 
 /* ══════════════════════════════════════════════════════════════
-   WIRE SHELL (bind events to existing DOM)
+   WIRE SHELL
 ══════════════════════════════════════════════════════════════ */
-function wireShell() {
-  // Navigation
+function wireShell(): void {
   $$('.snav-item[data-page]').forEach(btn => {
-    btn.onclick = () => navigatePage(btn.dataset.page);
+    btn.onclick = () => navigatePage(btn.dataset.page!);
   });
 
-  // Toolbar
-  document.getElementById('tb-lock').onclick = () => lockVault();
-  document.getElementById('btn-add-entry').onclick = () => openAddSheet();
-  document.getElementById('btn-view-toggle').onclick = () => toggleViewMode();
-  document.getElementById('btn-import').onclick = () => importVault();
-  document.getElementById('btn-export').onclick = () => exportVault();
-  document.getElementById('search-input').oninput = (e) => {
-    S.searchQ = e.target.value.toLowerCase();
+  document.getElementById('tb-lock')!.onclick = () => lockVault();
+  document.getElementById('btn-add-entry')!.onclick = () => openAddSheet();
+  document.getElementById('btn-view-toggle')!.onclick = () => toggleViewMode();
+  document.getElementById('btn-import')!.onclick = () => importVault();
+  document.getElementById('btn-export')!.onclick = () => exportVault();
+  (document.getElementById('search-input') as HTMLInputElement).oninput = (e) => {
+    S.searchQ = (e.target as HTMLInputElement).value.toLowerCase();
     filterCardsBySearch();
   };
 
-  // Sheet
-  document.getElementById('sheet-close').onclick = closeSheet;
-  document.getElementById('scrim').onclick = (e) => {
-    if (e.target.id === 'scrim') closeSheet();
+  document.getElementById('sheet-close')!.onclick = closeSheet;
+  document.getElementById('scrim')!.onclick = (e) => {
+    if ((e.target as HTMLElement).id === 'scrim') closeSheet();
   };
 
-  // Icon picker
-  const picker = document.getElementById('icon-picker');
+  const picker = document.getElementById('icon-picker')!;
   ICONS.forEach(ic => {
     const opt = document.createElement('div');
     opt.className = 'icon-opt' + (ic === '🔐' ? ' picked' : '');
@@ -148,48 +188,45 @@ function wireShell() {
     opt.onclick = () => {
       $$('.icon-opt').forEach(o => o.classList.remove('picked'));
       opt.classList.add('picked');
-      document.getElementById('f-icon').value = ic;
+      (document.getElementById('f-icon') as HTMLInputElement).value = ic;
     };
     picker.appendChild(opt);
   });
 
-  // Type toggle
   $$('.type-btn').forEach(btn => {
     btn.onclick = () => {
       $$('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('f-type').value = btn.dataset.t;
-      document.getElementById('form-totp-only').classList.toggle('hidden', btn.dataset.t === 'password');
+      (document.getElementById('f-type') as HTMLInputElement).value = btn.dataset.t!;
+      document.getElementById('form-totp-only')!.classList.toggle('hidden', btn.dataset.t === 'password');
     };
   });
 
-  // Password eye
-  const pwInput = document.getElementById('f-password');
-  const pwEye = document.getElementById('pw-eye');
+  const pwInput = document.getElementById('f-password') as HTMLInputElement;
+  const pwEye = document.getElementById('pw-eye')!;
   pwEye.onclick = () => {
     const show = pwInput.type === 'password';
     pwInput.type = show ? 'text' : 'password';
-    pwEye.querySelector('.material-icons-round').textContent = show ? 'visibility_off' : 'visibility';
+    pwEye.querySelector('.material-icons-round')!.textContent = show ? 'visibility_off' : 'visibility';
   };
 
-  // Password generator
-  document.getElementById('pw-gen').onclick = async () => {
-    const pw = await window.vaultxAPI.generator.generate({ length: 20, upper: true, lower: true, numbers: true, symbols: true });
-    pwInput.value = pw;
-    pwInput.type = 'text';
+  document.getElementById('pw-gen')!.onclick = async () => {
+    const r = await window.vaultxAPI.generator.generate({ length: 20, uppercase: true, lowercase: true, digits: true, symbols: true });
+    if (r.ok && r.password) {
+      pwInput.value = r.password;
+      pwInput.type = 'text';
+    }
   };
 
-  // Save
-  document.getElementById('btn-save-entry').onclick = () => saveEntry();
+  document.getElementById('btn-save-entry')!.onclick = () => saveEntry();
 
-  // Close all context menus on background click
   document.addEventListener('click', closeAllMenus);
 }
 
 /* ══════════════════════════════════════════════════════════════
    NAVIGATION
 ══════════════════════════════════════════════════════════════ */
-function navigatePage(page) {
+function navigatePage(page: string): void {
   S.page = page;
 
   $$('.snav-item[data-page]').forEach(b =>
@@ -199,15 +236,15 @@ function navigatePage(page) {
     if (el) el.classList.toggle('active', p === page);
   });
 
-  const pageNames = { accounts: '账户', groups: '分组', security: '安全', settings: '设置' };
-  document.getElementById('ct-title').textContent = pageNames[page] || page;
-  document.getElementById('ct-sub').textContent = '';
+  const pageNames: Record<string, string> = { accounts: '账户', groups: '分组', security: '安全', settings: '设置' };
+  document.getElementById('ct-title')!.textContent = pageNames[page] || page;
+  document.getElementById('ct-sub')!.textContent = '';
 
   const isAccounts = page === 'accounts';
-  document.getElementById('toolbar-search').style.display = isAccounts ? '' : 'none';
-  document.getElementById('btn-view-toggle').style.display = isAccounts ? '' : 'none';
-  document.getElementById('btn-import').style.display = isAccounts ? '' : 'none';
-  document.getElementById('btn-export').style.display = isAccounts ? '' : 'none';
+  document.getElementById('toolbar-search')!.style.display = isAccounts ? '' : 'none';
+  document.getElementById('btn-view-toggle')!.style.display = isAccounts ? '' : 'none';
+  document.getElementById('btn-import')!.style.display = isAccounts ? '' : 'none';
+  document.getElementById('btn-export')!.style.display = isAccounts ? '' : 'none';
 
   if (isAccounts) renderAccountsPage();
   else if (page === 'groups') renderGroupsPage();
@@ -221,7 +258,7 @@ function navigatePage(page) {
 /* ══════════════════════════════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════════════════════════════ */
-function renderSidebarCats() {
+function renderSidebarCats(): void {
   const el = document.getElementById('sidebar-cats');
   if (!el) return;
   el.innerHTML = CATS.map(cat => {
@@ -233,12 +270,12 @@ function renderSidebarCats() {
       <span class="scat-count">${count}</span>
     </button>`;
   }).join('');
-  el.querySelectorAll('.scat-item').forEach(btn => {
-    btn.onclick = () => { S.filterCat = btn.dataset.cat; renderSidebarCats(); renderAccountsPage(); };
+  el.querySelectorAll<HTMLElement>('.scat-item').forEach(btn => {
+    btn.onclick = () => { S.filterCat = btn.dataset.cat!; renderSidebarCats(); renderAccountsPage(); };
   });
 }
 
-function renderSidebarStats() {
+function renderSidebarStats(): void {
   const el = document.getElementById('sidebar-stats');
   if (!el) return;
   const totp = S.entries.filter(e => (e.type || 'totp') === 'totp').length;
@@ -249,7 +286,7 @@ function renderSidebarStats() {
 /* ══════════════════════════════════════════════════════════════
    ACCOUNTS PAGE
 ══════════════════════════════════════════════════════════════ */
-function getFilteredEntries() {
+function getFilteredEntries(): Entry[] {
   let list = S.entries;
   if (S.filterCat !== 'all') list = list.filter(e => normalizeCategory(e.category) === S.filterCat);
   if (S.searchQ) list = list.filter(e =>
@@ -259,7 +296,7 @@ function getFilteredEntries() {
   return list;
 }
 
-function renderAccountsPage() {
+function renderAccountsPage(): void {
   const page = document.getElementById('d-page-accounts');
   if (!page) return;
   const list = getFilteredEntries();
@@ -272,17 +309,16 @@ function renderAccountsPage() {
     return;
   }
 
-  const groups = { work: [], finance: [], personal: [] };
+  const groups: Record<string, Entry[]> = { work: [], finance: [], personal: [] };
   list.forEach(e => groups[normalizeCategory(e.category)].push(e));
 
   const container = document.createElement('div');
   container.className = 'account-list';
 
-  ['work', 'finance', 'personal'].forEach(cat => {
+  (['work', 'finance', 'personal'] as const).forEach(cat => {
     const items = groups[cat];
     if (!items.length) return;
 
-    // Section header
     const sec = document.createElement('div');
     sec.className = 'sec-hd';
     sec.innerHTML = `<span class="sec-dot" style="background:${CAT_COLORS[cat]}"></span>
@@ -291,7 +327,6 @@ function renderAccountsPage() {
       <span class="sec-count">${items.length}</span>`;
     container.appendChild(sec);
 
-    // Cards grid
     const grid = document.createElement('div');
     grid.className = 'cards-grid' + (S.viewMode === 'list' ? ' list-view' : '');
     items.forEach(entry => grid.appendChild(buildCard(entry)));
@@ -302,16 +337,16 @@ function renderAccountsPage() {
   page.appendChild(container);
 
   if (S.searchQ) filterCardsBySearch();
-  else document.getElementById('ct-sub').textContent = `${list.length} 个账户`;
+  else document.getElementById('ct-sub')!.textContent = `${list.length} 个账户`;
 }
 
-function filterCardsBySearch() {
+function filterCardsBySearch(): void {
   const q = S.searchQ;
   const page = document.getElementById('d-page-accounts');
   if (!page) return;
   let visibleCount = 0;
 
-  page.querySelectorAll('.card').forEach(card => {
+  page.querySelectorAll<HTMLElement>('.card').forEach(card => {
     const entry = S.entries.find(e => String(e.id) === card.dataset.id);
     if (!entry) return;
     const match = !q ||
@@ -322,18 +357,18 @@ function filterCardsBySearch() {
     if (match) visibleCount++;
   });
 
-  page.querySelectorAll('.sec-hd').forEach(sec => {
-    const grid = sec.nextElementSibling;
+  page.querySelectorAll<HTMLElement>('.sec-hd').forEach(sec => {
+    const grid = sec.nextElementSibling as HTMLElement | null;
     if (!grid) return;
-    const hasVisible = Array.from(grid.querySelectorAll('.card')).some(c => c.style.display !== 'none');
+    const hasVisible = Array.from(grid.querySelectorAll<HTMLElement>('.card')).some(c => c.style.display !== 'none');
     sec.style.display = hasVisible ? '' : 'none';
     grid.style.display = hasVisible ? '' : 'none';
   });
 
-  document.getElementById('ct-sub').textContent = q ? `${visibleCount} 个匹配` : `${S.entries.length} 个账户`;
+  document.getElementById('ct-sub')!.textContent = q ? `${visibleCount} 个匹配` : `${S.entries.length} 个账户`;
 }
 
-function toggleViewMode() {
+function toggleViewMode(): void {
   S.viewMode = S.viewMode === 'grid' ? 'list' : 'grid';
   const icon = document.querySelector('#btn-view-toggle .material-icons-round');
   if (icon) icon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
@@ -341,33 +376,29 @@ function toggleViewMode() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CARD BUILDING (from <template>)
+   CARD BUILDING
 ══════════════════════════════════════════════════════════════ */
-function buildCard(entry) {
+function buildCard(entry: Entry): HTMLElement {
   const type = entry.type || 'totp';
   const tplId = type === 'totp' ? 'tpl-card-totp' : 'tpl-card-pw';
-  const frag = document.getElementById(tplId).content.cloneNode(true);
-  const card = frag.querySelector('.card');
+  const frag = (document.getElementById(tplId) as HTMLTemplateElement).content.cloneNode(true) as DocumentFragment;
+  const card = frag.querySelector('.card') as HTMLElement;
 
-  // Common fields
   card.dataset.id = entry.id;
   card.dataset.cat = normalizeCategory(entry.category);
-  card.querySelector('.avatar').textContent = entry.icon || '🔐';
-  card.querySelector('.card-issuer').textContent = entry.issuer || entry.label || '未知';
+  card.querySelector('.avatar')!.textContent = entry.icon || '🔐';
+  card.querySelector('.card-issuer')!.textContent = entry.issuer || entry.label || '未知';
   const label = (entry.label && entry.label !== entry.issuer) ? entry.label : (entry.username || '');
-  card.querySelector('.card-label').textContent = label;
+  card.querySelector('.card-label')!.textContent = label;
 
-  // Row 3: username & password
   buildCardR3(card, entry);
-
-  // Wire interactions
   wireCard(card, entry);
 
   return card;
 }
 
-function buildCardR3(card, entry) {
-  const r3 = card.querySelector('.card-r3');
+function buildCardR3(card: HTMLElement, entry: Entry): void {
+  const r3 = card.querySelector('.card-r3') as HTMLElement;
   if (!entry.username && !entry.password) {
     r3.remove();
     return;
@@ -389,20 +420,19 @@ function buildCardR3(card, entry) {
 /* ══════════════════════════════════════════════════════════════
    CARD WIRING
 ══════════════════════════════════════════════════════════════ */
-function wireCard(card, entry) {
+function wireCard(card: HTMLElement, entry: Entry): void {
   const type = entry.type || 'totp';
 
-  // Context menu
-  const menuBtn = card.querySelector('.menu-btn');
-  const ctxMenu = card.querySelector('.ctx-menu');
+  const menuBtn = card.querySelector('.menu-btn') as HTMLElement;
+  const ctxMenu = card.querySelector('.ctx-menu') as HTMLElement;
   menuBtn.onclick = (e) => {
     e.stopPropagation();
     const wasOpen = ctxMenu.classList.contains('open');
     closeAllMenus();
     if (!wasOpen) ctxMenu.classList.add('open');
   };
-  card.querySelector('[data-action="edit"]').onclick = (e) => { e.stopPropagation(); closeAllMenus(); openEditSheet(entry); };
-  card.querySelector('[data-action="delete"]').onclick = (e) => { e.stopPropagation(); closeAllMenus(); confirmDelete(entry); };
+  (card.querySelector('[data-action="edit"]') as HTMLElement).onclick = (e) => { e.stopPropagation(); closeAllMenus(); openEditSheet(entry); };
+  (card.querySelector('[data-action="delete"]') as HTMLElement).onclick = (e) => { e.stopPropagation(); closeAllMenus(); confirmDelete(entry); };
 
   if (type === 'totp') {
     wireTotpCard(card, entry);
@@ -411,58 +441,55 @@ function wireCard(card, entry) {
   }
 }
 
-function wireTotpCard(card, entry) {
+function wireTotpCard(card: HTMLElement, entry: Entry): void {
   card.onclick = (e) => {
-    if (e.target.closest('.menu-btn,.ctx-menu,.copy-chip,.r3-pw-toggle,.r3-pw-copy')) return;
+    if ((e.target as HTMLElement).closest('.menu-btn,.ctx-menu,.copy-chip,.r3-pw-toggle,.r3-pw-copy')) return;
     if (!card.classList.contains('revealed')) revealTOTP(card, entry);
   };
 
-  card.querySelector('.copy-chip').onclick = (e) => {
+  (card.querySelector('.copy-chip') as HTMLElement).onclick = (e) => {
     e.stopPropagation();
-    const code = card.querySelector('.otp').textContent.replace(/\s/g, '');
-    copyText(code, card.querySelector('.copy-chip'));
+    const code = card.querySelector('.otp')!.textContent!.replace(/\s/g, '');
+    copyText(code, card.querySelector('.copy-chip') as HTMLElement | null);
   };
 
   wireR3Password(card, entry);
 }
 
-function wirePasswordCard(card, entry) {
-  const pwDisplay = card.querySelector('.pw-display');
-  const copyChip = card.querySelector('.card-r2-pw .copy-chip');
+function wirePasswordCard(card: HTMLElement, entry: Entry): void {
+  const pwDisplay = card.querySelector('.pw-display') as HTMLElement;
+  const copyChip = card.querySelector('.card-r2-pw .copy-chip') as HTMLElement;
   let pwVisible = false;
 
   card.onclick = (e) => {
-    if (e.target.closest('.menu-btn,.ctx-menu')) return;
+    if ((e.target as HTMLElement).closest('.menu-btn,.ctx-menu')) return;
 
-    // r2 密码切换（模板中的 .pw-toggle）
-    if (e.target.closest('.card-r2-pw .pw-toggle')) {
+    if ((e.target as HTMLElement).closest('.card-r2-pw .pw-toggle')) {
       pwVisible = !pwVisible;
       pwDisplay.textContent = pwVisible ? (entry.password || '') : '••••••••';
       pwDisplay.classList.toggle('revealed-pw', pwVisible);
-      card.querySelector('.card-r2-pw .pw-toggle .material-icons-round').textContent = pwVisible ? 'visibility_off' : 'visibility';
+      (card.querySelector('.card-r2-pw .pw-toggle .material-icons-round') as HTMLElement).textContent = pwVisible ? 'visibility_off' : 'visibility';
       return;
     }
 
-    // r2 复制
-    if (e.target.closest('.card-r2-pw .copy-chip')) {
+    if ((e.target as HTMLElement).closest('.card-r2-pw .copy-chip')) {
       copyText(entry.password || '', copyChip);
       return;
     }
 
-    // r3 密码切换和复制（由 buildCardR3 添加）
-    if (e.target.closest('.r3-pw-toggle')) {
-      const r3Pw = card.querySelector('.r3-pw');
+    if ((e.target as HTMLElement).closest('.r3-pw-toggle')) {
+      const r3Pw = card.querySelector('.r3-pw') as HTMLElement;
       if (r3Pw) {
         const vis = r3Pw.classList.contains('revealed-pw');
         r3Pw.textContent = vis ? '••••••••' : (entry.password || '');
         r3Pw.classList.toggle('masked-pw', vis);
         r3Pw.classList.toggle('revealed-pw', !vis);
-        const icon = card.querySelector('.r3-pw-toggle .material-icons-round');
+        const icon = card.querySelector('.r3-pw-toggle .material-icons-round') as HTMLElement;
         if (icon) icon.textContent = vis ? 'visibility' : 'visibility_off';
       }
       return;
     }
-    if (e.target.closest('.r3-pw-copy')) {
+    if ((e.target as HTMLElement).closest('.r3-pw-copy')) {
       copyText(entry.password || '');
       return;
     }
@@ -471,43 +498,43 @@ function wirePasswordCard(card, entry) {
   };
 }
 
-function wireR3Password(card, entry) {
-  const r3PwEl = card.querySelector('.r3-pw');
-  const r3PwToggle = card.querySelector('.r3-pw-toggle');
-  const r3PwCopy = card.querySelector('.r3-pw-copy');
+function wireR3Password(card: HTMLElement, entry: Entry): void {
+  const r3PwEl = card.querySelector('.r3-pw') as HTMLElement;
+  const r3PwToggle = card.querySelector('.r3-pw-toggle') as HTMLElement;
+  const r3PwCopy = card.querySelector('.r3-pw-copy') as HTMLElement;
   if (!r3PwEl || !entry.password) return;
 
   r3PwToggle.onclick = (e) => {
     e.stopPropagation();
     const visible = r3PwEl.classList.contains('revealed-pw');
-    r3PwEl.textContent = visible ? '••••••••' : entry.password;
+    r3PwEl.textContent = visible ? '••••••••' : entry.password!;
     r3PwEl.classList.toggle('masked-pw', visible);
     r3PwEl.classList.toggle('revealed-pw', !visible);
-    r3PwToggle.querySelector('.material-icons-round').textContent = visible ? 'visibility' : 'visibility_off';
+    (r3PwToggle.querySelector('.material-icons-round') as HTMLElement).textContent = visible ? 'visibility' : 'visibility_off';
   };
 
-  r3PwCopy.onclick = (e) => { e.stopPropagation(); copyText(entry.password, r3PwCopy); };
+  r3PwCopy.onclick = (e) => { e.stopPropagation(); copyText(entry.password!, r3PwCopy); };
 }
 
-function closeAllMenus() {
+function closeAllMenus(): void {
   $$('.ctx-menu.open').forEach(m => m.classList.remove('open'));
 }
 
 /* ══════════════════════════════════════════════════════════════
    TOTP REVEAL & TIMER
 ══════════════════════════════════════════════════════════════ */
-function revealTOTP(card, entry) {
+function revealTOTP(card: HTMLElement, entry: Entry): void {
   card.classList.add('revealed');
-  const otpEl = card.querySelector('.otp');
-  const ringEl = card.querySelector('.t-ring');
-  const numEl = card.querySelector('.t-num');
-  const timerWrap = card.querySelector('.timer-wrap');
+  const otpEl = card.querySelector('.otp') as HTMLElement;
+  const ringEl = card.querySelector('.t-ring') as SVGCircleElement;
+  const numEl = card.querySelector('.t-num') as HTMLElement;
+  const timerWrap = card.querySelector('.timer-wrap') as HTMLElement;
   timerWrap.style.display = '';
 
-  async function update() {
-    const conf = entry.totp || { secret: entry.secret, algorithm: 'SHA1', digits: 6, period: 30 };
+  async function update(): Promise<void> {
+    const conf: TotpConfig = entry.totp || { secret: entry.secret || '', algorithm: 'SHA1', digits: 6, period: 30 };
     try {
-      const r = await window.TotpUtil.computeTotp(conf);
+      const r: TotpResult = await computeTotp(conf);
       const d = conf.digits || 6;
       otpEl.textContent = d === 6 ? r.code.slice(0, 3) + ' ' + r.code.slice(3) : r.code;
       otpEl.classList.remove('masked', 'warn', 'danger');
@@ -518,8 +545,8 @@ function revealTOTP(card, entry) {
       const col = r.remaining <= 5 ? 'var(--danger)' : r.remaining <= 10 ? 'var(--warn)' : 'var(--primary)';
       ringEl.style.stroke = col;
       numEl.style.color = col;
-      numEl.textContent = r.remaining;
-    } catch (e) {
+      numEl.textContent = String(r.remaining);
+    } catch {
       otpEl.textContent = '错误';
     }
   }
@@ -531,90 +558,95 @@ function revealTOTP(card, entry) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ADD / EDIT SHEET (populate existing DOM)
+   ADD / EDIT SHEET
 ══════════════════════════════════════════════════════════════ */
-function openAddSheet() {
+function openAddSheet(): void {
   S.editingEntry = null;
   resetSheet();
-  document.getElementById('scrim').classList.add('open');
+  document.getElementById('scrim')!.classList.add('open');
 }
 
-function openEditSheet(entry) {
+function openEditSheet(entry: Entry): void {
   S.editingEntry = entry;
   populateSheet(entry);
-  document.getElementById('scrim').classList.add('open');
+  document.getElementById('scrim')!.classList.add('open');
 }
 
-function closeSheet() {
-  document.getElementById('scrim').classList.remove('open');
+function closeSheet(): void {
+  document.getElementById('scrim')!.classList.remove('open');
 }
 
-function resetSheet() {
-  document.getElementById('sheet-title').textContent = '添加账户';
-  document.getElementById('btn-save-entry').innerHTML = '<span class="material-icons-round">add</span>添加账户';
-  document.getElementById('f-icon').value = '🔐';
+function resetSheet(): void {
+  document.getElementById('sheet-title')!.textContent = '添加账户';
+  document.getElementById('btn-save-entry')!.innerHTML = '<span class="material-icons-round">add</span>添加账户';
+  (document.getElementById('f-icon') as HTMLInputElement).value = '🔐';
   $$('.icon-opt').forEach((o, i) => o.classList.toggle('picked', i === 0));
-  document.getElementById('f-type').value = 'totp';
+  (document.getElementById('f-type') as HTMLInputElement).value = 'totp';
   $$('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.t === 'totp'));
-  document.getElementById('form-totp-only').classList.remove('hidden');
-  document.getElementById('f-issuer').value = '';
-  document.getElementById('f-label').value = '';
-  document.getElementById('f-username').value = '';
-  document.getElementById('f-secret').value = '';
-  document.getElementById('f-algo').value = 'SHA1';
-  document.getElementById('f-period').value = '30';
-  document.getElementById('f-password').value = '';
-  document.getElementById('f-password').type = 'password';
-  document.getElementById('pw-eye').querySelector('.material-icons-round').textContent = 'visibility';
-  document.getElementById('f-cat').value = 'personal';
+  document.getElementById('form-totp-only')!.classList.remove('hidden');
+  (document.getElementById('f-issuer') as HTMLInputElement).value = '';
+  (document.getElementById('f-label') as HTMLInputElement).value = '';
+  (document.getElementById('f-username') as HTMLInputElement).value = '';
+  (document.getElementById('f-secret') as HTMLInputElement).value = '';
+  (document.getElementById('f-algo') as HTMLSelectElement).value = 'SHA1';
+  (document.getElementById('f-period') as HTMLSelectElement).value = '30';
+  (document.getElementById('f-password') as HTMLInputElement).value = '';
+  (document.getElementById('f-password') as HTMLInputElement).type = 'password';
+  document.getElementById('pw-eye')!.querySelector('.material-icons-round')!.textContent = 'visibility';
+  (document.getElementById('f-cat') as HTMLSelectElement).value = 'personal';
 }
 
-function populateSheet(entry) {
+function populateSheet(entry: Entry): void {
   resetSheet();
   const type = entry.type || 'totp';
-  document.getElementById('sheet-title').textContent = '编辑账户';
-  document.getElementById('btn-save-entry').innerHTML = '<span class="material-icons-round">save</span>保存更改';
-  document.getElementById('f-icon').value = entry.icon || '🔐';
+  document.getElementById('sheet-title')!.textContent = '编辑账户';
+  document.getElementById('btn-save-entry')!.innerHTML = '<span class="material-icons-round">save</span>保存更改';
+  (document.getElementById('f-icon') as HTMLInputElement).value = entry.icon || '🔐';
   $$('.icon-opt').forEach(o => o.classList.toggle('picked', o.dataset.icon === entry.icon));
-  document.getElementById('f-type').value = type;
+  (document.getElementById('f-type') as HTMLInputElement).value = type;
   $$('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.t === type));
-  document.getElementById('form-totp-only').classList.toggle('hidden', type === 'password');
-  document.getElementById('f-issuer').value = entry.issuer || '';
-  document.getElementById('f-label').value = entry.label || '';
-  document.getElementById('f-username').value = entry.username || '';
-  document.getElementById('f-password').value = entry.password || '';
+  document.getElementById('form-totp-only')!.classList.toggle('hidden', type === 'password');
+  (document.getElementById('f-issuer') as HTMLInputElement).value = entry.issuer || '';
+  (document.getElementById('f-label') as HTMLInputElement).value = entry.label || '';
+  (document.getElementById('f-username') as HTMLInputElement).value = entry.username || '';
+  (document.getElementById('f-password') as HTMLInputElement).value = entry.password || '';
   if (type === 'totp') {
-    const totp = entry.totp || {};
-    document.getElementById('f-secret').value = totp.secret || entry.secret || '';
-    document.getElementById('f-algo').value = totp.algorithm || 'SHA1';
-    document.getElementById('f-period').value = totp.period || 30;
+    const totp = entry.totp || {} as TotpConfig;
+    (document.getElementById('f-secret') as HTMLInputElement).value = totp.secret || entry.secret || '';
+    (document.getElementById('f-algo') as HTMLSelectElement).value = totp.algorithm || 'SHA1';
+    (document.getElementById('f-period') as HTMLSelectElement).value = String(totp.period || 30);
   }
-  document.getElementById('f-cat').value = normalizeCategory(entry.category);
+  (document.getElementById('f-cat') as HTMLSelectElement).value = normalizeCategory(entry.category);
 }
 
-async function saveEntry() {
+async function saveEntry(): Promise<void> {
   const isEdit = !!S.editingEntry;
   const existing = S.editingEntry;
-  const type = document.getElementById('f-type').value;
-  const issuer = document.getElementById('f-issuer').value.trim();
-  const secret = document.getElementById('f-secret').value.trim();
+  const type = (document.getElementById('f-type') as HTMLInputElement).value;
+  const issuer = (document.getElementById('f-issuer') as HTMLInputElement).value.trim();
+  const secret = (document.getElementById('f-secret') as HTMLInputElement).value.trim();
   if (!issuer) { showSnack('请填写服务名称'); return; }
   if (type === 'totp' && !secret) { showSnack('请填写 TOTP 密钥'); return; }
 
-  const pwValue = document.getElementById('f-password').value;
-  const entryData = {
+  const pwValue = (document.getElementById('f-password') as HTMLInputElement).value;
+  const entryData: Entry = {
     id: isEdit && existing ? existing.id : crypto.randomUUID(),
-    icon: document.getElementById('f-icon').value,
+    icon: (document.getElementById('f-icon') as HTMLInputElement).value,
     issuer,
     title: issuer,
-    label: document.getElementById('f-label').value.trim(),
-    username: document.getElementById('f-username').value.trim(),
-    category: CAT_MAP[document.getElementById('f-cat').value] || 'Personal',
-    type,
+    label: (document.getElementById('f-label') as HTMLInputElement).value.trim(),
+    username: (document.getElementById('f-username') as HTMLInputElement).value.trim(),
+    category: CAT_MAP[(document.getElementById('f-cat') as HTMLSelectElement).value] || 'Personal',
+    type: type as 'totp' | 'password',
   };
 
   if (type === 'totp') {
-    entryData.totp = { secret, algorithm: document.getElementById('f-algo').value, digits: 6, period: parseInt(document.getElementById('f-period').value) };
+    entryData.totp = {
+      secret,
+      algorithm: (document.getElementById('f-algo') as HTMLSelectElement).value,
+      digits: 6,
+      period: parseInt((document.getElementById('f-period') as HTMLSelectElement).value),
+    };
     entryData.password = pwValue || (existing ? existing.password : '');
   } else {
     entryData.password = pwValue;
@@ -630,7 +662,7 @@ async function saveEntry() {
     }
     closeSheet();
     await refreshEntries();
-  } catch (e) {
+  } catch (e: any) {
     showSnack('保存失败: ' + (e.message || e));
   }
 }
@@ -638,13 +670,13 @@ async function saveEntry() {
 /* ══════════════════════════════════════════════════════════════
    DELETE
 ══════════════════════════════════════════════════════════════ */
-function confirmDelete(entry) {
-  const overlay = document.getElementById('confirm-overlay');
-  document.getElementById('confirm-title').textContent = '删除账户';
-  document.getElementById('confirm-msg').textContent = `确定要删除"${entry.issuer || entry.label}"吗？`;
+function confirmDelete(entry: Entry): void {
+  const overlay = document.getElementById('confirm-overlay') as HTMLElement;
+  document.getElementById('confirm-title')!.textContent = '删除账户';
+  document.getElementById('confirm-msg')!.textContent = `确定要删除"${entry.issuer || entry.label}"吗？`;
   overlay.style.display = 'flex';
-  document.getElementById('confirm-cancel').onclick = () => { overlay.style.display = 'none'; };
-  document.getElementById('confirm-ok').onclick = async () => {
+  document.getElementById('confirm-cancel')!.onclick = () => { overlay.style.display = 'none'; };
+  document.getElementById('confirm-ok')!.onclick = async () => {
     overlay.style.display = 'none';
     await window.vaultxAPI.vault.deleteEntry(entry.id);
     showSnack('账户已删除');
@@ -652,9 +684,9 @@ function confirmDelete(entry) {
   };
 }
 
-async function refreshEntries() {
+async function refreshEntries(): Promise<void> {
   const ge = await window.vaultxAPI.vault.getEntries();
-  S.entries = ge.ok ? ge.entries : [];
+  S.entries = ge.ok ? (ge.entries as Entry[]) : [];
   renderSidebarCats();
   renderSidebarStats();
   if (S.page === 'accounts') renderAccountsPage();
@@ -663,7 +695,7 @@ async function refreshEntries() {
 /* ══════════════════════════════════════════════════════════════
    GROUPS PAGE
 ══════════════════════════════════════════════════════════════ */
-function renderGroupsPage() {
+function renderGroupsPage(): void {
   const page = document.getElementById('d-page-groups');
   if (!page) return;
   const groups = [
@@ -684,15 +716,15 @@ function renderGroupsPage() {
       </div>
     </div>`;
   }).join('') + '</div>';
-  page.querySelectorAll('.d-group-btn').forEach(b => {
-    b.onclick = () => { S.filterCat = b.dataset.g; navigatePage('accounts'); };
+  page.querySelectorAll<HTMLElement>('.d-group-btn').forEach(b => {
+    b.onclick = () => { S.filterCat = b.dataset.g!; navigatePage('accounts'); };
   });
 }
 
 /* ══════════════════════════════════════════════════════════════
    SECURITY PAGE
 ══════════════════════════════════════════════════════════════ */
-function renderSecurityPage() {
+function renderSecurityPage(): void {
   const page = document.getElementById('d-page-security');
   if (!page) return;
   page.innerHTML = `<div class="settings-wrap">
@@ -719,13 +751,13 @@ function renderSecurityPage() {
       </div>
     </div>
   </div>`;
-  page.querySelector('#sec-lock').onclick = () => lockVault();
+  (page.querySelector('#sec-lock') as HTMLElement).onclick = () => lockVault();
 }
 
 /* ══════════════════════════════════════════════════════════════
    SETTINGS PAGE
 ══════════════════════════════════════════════════════════════ */
-function renderSettingsPage() {
+function renderSettingsPage(): void {
   const page = document.getElementById('d-page-settings');
   if (!page) return;
   const cur = getAppEl().dataset.theme || 'c';
@@ -775,14 +807,14 @@ function renderSettingsPage() {
     </div>
   </div>`;
 
-  page.querySelectorAll('.th-btn').forEach(b => { b.onclick = () => setTheme(b.dataset.t); });
-  page.querySelector('#st-lock').onchange = (e) => { S.settings.autoLockTimeout = parseInt(e.target.value); saveSettings(); };
-  page.querySelector('#st-clip').onchange = (e) => { S.settings.clipboardClearSeconds = parseInt(e.target.value); saveSettings(); };
-  page.querySelector('#st-import').onclick = () => importVault();
-  page.querySelector('#st-export').onclick = () => exportVault();
+  page.querySelectorAll<HTMLElement>('.th-btn').forEach(b => { b.onclick = () => setTheme(b.dataset.t!); });
+  (page.querySelector('#st-lock') as HTMLSelectElement).onchange = (e) => { S.settings.autoLockTimeout = parseInt((e.target as HTMLSelectElement).value); saveSettings(); };
+  (page.querySelector('#st-clip') as HTMLSelectElement).onchange = (e) => { S.settings.clipboardClearSeconds = parseInt((e.target as HTMLSelectElement).value); saveSettings(); };
+  (page.querySelector('#st-import') as HTMLElement).onclick = () => importVault();
+  (page.querySelector('#st-export') as HTMLElement).onclick = () => exportVault();
 }
 
-async function saveSettings() {
+async function saveSettings(): Promise<void> {
   localStorage.setItem('settings', JSON.stringify(S.settings));
   await window.vaultxAPI.settings.update(S.settings);
 }
@@ -790,35 +822,35 @@ async function saveSettings() {
 /* ══════════════════════════════════════════════════════════════
    IMPORT / EXPORT
 ══════════════════════════════════════════════════════════════ */
-async function importVault() {
-  const path = await window.vaultxAPI.dialog.openFile({ filters: [{ name: 'VaultX', extensions: ['vaultx', 'json'] }] });
+async function importVault(): Promise<void> {
+  const path = await window.vaultxAPI.dialog.openFile();
   if (path) showSnack('导入功能待实现');
 }
 
-async function exportVault() {
-  const path = await window.vaultxAPI.dialog.saveFile({ defaultPath: 'vaultx-backup.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
+async function exportVault(): Promise<void> {
+  const path = await window.vaultxAPI.dialog.saveFile();
   if (path) showSnack('导出功能待实现');
 }
 
 /* ══════════════════════════════════════════════════════════════
    VAULT: LOCK / UNLOCK / INIT / CREATE
 ══════════════════════════════════════════════════════════════ */
-async function lockVault() {
+async function lockVault(): Promise<void> {
   await window.vaultxAPI.vault.lock();
   S.vaultOpen = false;
   S.entries = [];
   renderLock();
 }
 
-async function initVault() {
+async function initVault(): Promise<void> {
   if (!S.vaultPath) { renderCreateVault(); return; }
   const status = await window.vaultxAPI.vault.check(S.vaultPath);
   if (!status.ok || !status.exists) { renderCreateVault(); return; }
   renderLock();
 }
 
-async function changeVault() {
-  const path = await window.vaultxAPI.dialog.openFile({ filters: [{ name: 'VaultX', extensions: ['vaultx'] }] });
+async function changeVault(): Promise<void> {
+  const path = await window.vaultxAPI.dialog.openFile();
   if (path) {
     S.vaultPath = path;
     localStorage.setItem('vaultPath', path);
@@ -826,8 +858,8 @@ async function changeVault() {
   }
 }
 
-function renderLock() {
-  const lockOv = document.getElementById('lock-ov');
+function renderLock(): void {
+  const lockOv = document.getElementById('lock-ov') as HTMLElement;
   if (!lockOv) return;
   lockOv.innerHTML = `
     <div class="lock-logo"><span class="material-icons-round">shield</span></div>
@@ -848,15 +880,15 @@ function renderLock() {
     </div>`;
   lockOv.classList.add('show');
 
-  const pwInput = lockOv.querySelector('#lock-pw');
-  const eyeBtn = lockOv.querySelector('#lock-eye');
-  const errEl = lockOv.querySelector('#lock-err');
-  const submitBtn = lockOv.querySelector('#lock-submit');
+  const pwInput = lockOv.querySelector('#lock-pw') as HTMLInputElement;
+  const eyeBtn = lockOv.querySelector('#lock-eye') as HTMLElement;
+  const errEl = lockOv.querySelector('#lock-err') as HTMLElement;
+  const submitBtn = lockOv.querySelector('#lock-submit') as HTMLButtonElement;
 
   eyeBtn.onclick = () => {
     const show = pwInput.type === 'password';
     pwInput.type = show ? 'text' : 'password';
-    eyeBtn.querySelector('.material-icons-round').textContent = show ? 'visibility_off' : 'visibility';
+    eyeBtn.querySelector('.material-icons-round')!.textContent = show ? 'visibility_off' : 'visibility';
   };
 
   pwInput.onkeydown = (e) => { if (e.key === 'Enter') submitBtn.click(); };
@@ -867,7 +899,7 @@ function renderLock() {
     submitBtn.disabled = true;
     submitBtn.textContent = '解锁中…';
     try {
-      const openR = await window.vaultxAPI.vault.open(S.vaultPath);
+      const openR = await window.vaultxAPI.vault.open(S.vaultPath!);
       if (!openR.ok) {
         errEl.textContent = '无法打开金库: ' + openR.error;
         errEl.classList.add('show');
@@ -880,7 +912,7 @@ function renderLock() {
         lockOv.classList.remove('show');
         S.vaultOpen = true;
         const ge = await window.vaultxAPI.vault.getEntries();
-        S.entries = ge.ok ? ge.entries : [];
+        S.entries = ge.ok ? (ge.entries as Entry[]) : [];
         renderSidebarCats();
         renderSidebarStats();
         navigatePage('accounts');
@@ -892,7 +924,7 @@ function renderLock() {
         submitBtn.disabled = false;
         submitBtn.textContent = '解锁';
       }
-    } catch (e) {
+    } catch (e: any) {
       errEl.textContent = '解锁失败: ' + (e.message || e);
       errEl.classList.add('show');
       submitBtn.disabled = false;
@@ -900,12 +932,12 @@ function renderLock() {
     }
   };
 
-  lockOv.querySelector('#lock-change').onclick = () => changeVault();
+  (lockOv.querySelector('#lock-change') as HTMLElement).onclick = () => changeVault();
   setTimeout(() => pwInput.focus(), 100);
 }
 
-function renderCreateVault() {
-  const lockOv = document.getElementById('lock-ov');
+function renderCreateVault(): void {
+  const lockOv = document.getElementById('lock-ov') as HTMLElement;
   lockOv.innerHTML = `
     <div class="lock-logo"><span class="material-icons-round">add_circle</span></div>
     <div class="lock-h">创建金库</div>
@@ -927,19 +959,19 @@ function renderCreateVault() {
     </div>`;
   lockOv.classList.add('show');
 
-  const pw1 = lockOv.querySelector('#create-pw');
-  const pw2 = lockOv.querySelector('#create-pw2');
-  const errEl = lockOv.querySelector('#create-err');
-  const eye = lockOv.querySelector('#create-eye');
+  const pw1 = lockOv.querySelector('#create-pw') as HTMLInputElement;
+  const pw2 = lockOv.querySelector('#create-pw2') as HTMLInputElement;
+  const errEl = lockOv.querySelector('#create-err') as HTMLElement;
+  const eye = lockOv.querySelector('#create-eye') as HTMLElement;
 
   eye.onclick = () => {
     const s = pw1.type === 'password';
     pw1.type = s ? 'text' : 'password';
-    eye.querySelector('.material-icons-round').textContent = s ? 'visibility_off' : 'visibility';
+    eye.querySelector('.material-icons-round')!.textContent = s ? 'visibility_off' : 'visibility';
   };
 
-  lockOv.querySelector('#create-choose').onclick = async () => {
-    const path = await window.vaultxAPI.dialog.saveFile({ defaultPath: 'vault.vaultx', filters: [{ name: 'VaultX', extensions: ['vaultx'] }] });
+  (lockOv.querySelector('#create-choose') as HTMLElement).onclick = async () => {
+    const path = await window.vaultxAPI.dialog.saveFile();
     if (path) {
       S.vaultPath = path;
       localStorage.setItem('vaultPath', path);
@@ -947,7 +979,7 @@ function renderCreateVault() {
     }
   };
 
-  lockOv.querySelector('#create-submit').onclick = async () => {
+  (lockOv.querySelector('#create-submit') as HTMLElement).onclick = async () => {
     const p1 = pw1.value, p2 = pw2.value;
     if (!p1) { errEl.textContent = '请输入密码'; errEl.classList.add('show'); return; }
     if (p1 !== p2) { errEl.textContent = '两次密码不一致'; errEl.classList.add('show'); return; }

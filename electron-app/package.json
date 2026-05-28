@@ -2,11 +2,15 @@
   "name": "vaultx",
   "version": "1.0.0",
   "description": "VaultX - 本地优先的跨平台密码管理工具",
-  "main": "src/main/index.js",
+  "main": "dist/main/index.js",
   "scripts": {
-    "start": "electron . --no-sandbox",
-    "dev": "electron . --no-sandbox",
-    "build": "electron-builder",
+    "build:main": "esbuild src/main/index.ts --bundle --platform=node --format=cjs --outfile=dist/main/index.js --sourcemap --external:electron --external:argon2",
+    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --outfile=dist/preload/index.js --sourcemap --external:electron",
+    "build:renderer": "esbuild src/renderer/app.ts --bundle --platform=browser --format=iife --outfile=dist/renderer/app.js --sourcemap",
+    "build": "npm run build:main && npm run build:preload && npm run build:renderer",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && electron . --no-sandbox",
+    "dev": "npm run build && electron . --no-sandbox",
     "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
@@ -14,7 +18,9 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^41.2.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
   },
   "dependencies": {
     "argon2": "^0.41.1",

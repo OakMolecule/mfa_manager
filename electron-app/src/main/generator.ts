@@ -1,11 +1,19 @@
 'use strict';
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
-/**
- * 密码生成器（对应 Rust vaultx-core::generator）
- */
-function generatePassword(config) {
+export interface PasswordConfig {
+  length?: number;
+  uppercase?: boolean;
+  lowercase?: boolean;
+  digits?: boolean;
+  symbols?: boolean;
+  excludeAmbiguous?: boolean;
+}
+
+export type PasswordStrength = 'weak' | 'medium' | 'strong';
+
+export function generatePassword(config: PasswordConfig): string {
   const {
     length = 16,
     uppercase = true,
@@ -31,11 +39,7 @@ function generatePassword(config) {
   return result;
 }
 
-/**
- * 密码强度评估（对应 Rust vaultx-core::generator::evaluate_strength）
- * 返回 'weak' | 'medium' | 'strong'
- */
-function evaluatePasswordStrength(password) {
+export function evaluatePasswordStrength(password: string): PasswordStrength {
   if (!password || password.length === 0) return 'weak';
   const len = password.length;
   const hasUpper = /[A-Z]/.test(password);
@@ -48,5 +52,3 @@ function evaluatePasswordStrength(password) {
   if (len >= 12 && variety >= 2) return 'medium';
   return 'weak';
 }
-
-module.exports = { generatePassword, evaluatePasswordStrength };
