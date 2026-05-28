@@ -66,7 +66,7 @@ const S: AppState = {
   entries: [],
   filterCat: 'all',
   searchQ: '',
-  viewMode: 'grid',
+  viewMode: (localStorage.getItem('viewMode') as 'grid' | 'list') || 'grid',
   vaultPath: localStorage.getItem('vaultPath') || null,
   vaultOpen: false,
   settings: JSON.parse(localStorage.getItem('settings') || '{"autoLockTimeout":300,"clipboardClearSeconds":30,"maxErrorCount":5}'),
@@ -365,6 +365,7 @@ function filterCardsBySearch(): void {
 
 function toggleViewMode(): void {
   S.viewMode = S.viewMode === 'grid' ? 'list' : 'grid';
+  localStorage.setItem('viewMode', S.viewMode);
   const icon = document.querySelector('#btn-view-toggle .material-icons-round');
   if (icon) icon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
   if (S.page === 'accounts') renderAccountsPage();
@@ -393,23 +394,41 @@ function buildCard(entry: Entry): HTMLElement {
 }
 
 function buildCardR3(card: HTMLElement, entry: Entry): void {
-  const r3 = card.querySelector('.card-r3') as HTMLElement;
-  if (!entry.username && !entry.password) {
-    r3.remove();
-    return;
+  let r3 = card.querySelector('.card-r3') as HTMLElement | null;
+  if (!r3) {
+    r3 = document.createElement('div');
+    r3.className = 'card-r3';
+    card.querySelector('.card-in')!.appendChild(r3);
   }
 
   let html = '';
   if (entry.username) {
-    html += `<span class="cred-label">用户</span><span class="cred-val">${escHtml(entry.username)}</span>`;
+    html += `<span class="r3-section"><span class="cred-label">用户</span><span class="cred-val">${escHtml(entry.username)}</span></span>`;
   }
   if (entry.password) {
-    html += `<span class="cred-label" style="${entry.username ? 'margin-left:8px' : ''}">密码</span>
+    html += `<span class="r3-divider"></span><span class="r3-section"><span class="cred-label">密码</span>
       <span class="cred-val masked-pw r3-pw">••••••••</span>
       <button class="pw-toggle r3-pw-toggle"><span class="material-icons-round">visibility</span></button>
-      <button class="copy-chip r3-pw-copy" style="opacity:1;transform:scale(1)"><span class="material-icons-round">content_copy</span>复制</button>`;
+      <button class="copy-chip r3-pw-copy" style="opacity:1;transform:scale(1)"><span class="material-icons-round">content_copy</span></button></span>`;
   }
-  r3.innerHTML = html;
+  if ((entry.type || 'totp') === 'totp' && entry.totp?.secret) {
+    html += `<span class="r3-divider"></span><span class="r3-section">
+      <span class="r3-timer-wrap">
+        <svg class="r3-timer-svg" width="22" height="22" viewBox="0 0 38 38">
+          <circle class="t-bg" cx="19" cy="19" r="16"/>
+          <circle class="t-ring r3-ring" cx="19" cy="19" r="16"
+            stroke-dasharray="100.53" stroke-dashoffset="100.53" stroke="var(--primary)"/>
+        </svg>
+        <span class="r3-t-num">30</span>
+      </span>
+      <span class="otp r3-otp masked" id="r3-otp-${entry.id}">••• •••</span>
+      <button class="copy-chip r3-otp-copy" style="opacity:1;transform:scale(1)"><span class="material-icons-round">content_copy</span></button></span>`;
+  }
+  if (html) {
+    r3.innerHTML = html;
+  } else {
+    r3.remove();
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -434,6 +453,9 @@ function wireCard(card: HTMLElement, entry: Entry): void {
   } else {
     wirePasswordCard(card, entry);
   }
+
+  // Double-click to copy in list view sections
+  wireR3DblCopy(card, entry);
 }
 
 function wireTotpCard(card: HTMLElement, entry: Entry): void {
@@ -493,6 +515,34 @@ function wirePasswordCard(card: HTMLElement, entry: Entry): void {
   };
 }
 
+function wireR3DblCopy(card: HTMLElement, entry: Entry): void {
+  const sections = card.querySelectorAll('.r3-section');
+  sections.forEach(sec => {
+    const el = sec as HTMLElement;
+    // Determine what this section contains
+    if (el.querySelector('.cred-val') && !el.querySelector('.r3-pw')) {
+      // Username section
+      el.ondblclick = (e) => {
+        e.stopPropagation();
+        if (entry.username) copyText(entry.username, el);
+      };
+    } else if (el.querySelector('.r3-pw')) {
+      // Password section
+      el.ondblclick = (e) => {
+        e.stopPropagation();
+        if (entry.password) copyText(entry.password, el);
+      };
+    } else if (el.querySelector('.r3-otp')) {
+      // TOTP section
+      el.ondblclick = (e) => {
+        e.stopPropagation();
+        const otpText = el.querySelector('.r3-otp')?.textContent?.replace(/\s/g, '');
+        if (otpText && !otpText.includes('•')) copyText(otpText, el);
+      };
+    }
+  });
+}
+
 function wireR3Password(card: HTMLElement, entry: Entry): void {
   const r3PwEl = card.querySelector('.r3-pw') as HTMLElement;
   const r3PwToggle = card.querySelector('.r3-pw-toggle') as HTMLElement;
@@ -520,29 +570,53 @@ function closeAllMenus(): void {
 ══════════════════════════════════════════════════════════════ */
 function revealTOTP(card: HTMLElement, entry: Entry): void {
   card.classList.add('revealed');
-  const otpEl = card.querySelector('.otp') as HTMLElement;
-  const ringEl = card.querySelector('.t-ring') as SVGCircleElement;
-  const numEl = card.querySelector('.t-num') as HTMLElement;
+  const otpEl = card.querySelector('.card-r2 .otp') as HTMLElement;
+  const ringEl = card.querySelector('.card-r2 .t-ring') as SVGCircleElement;
+  const numEl = card.querySelector('.card-r2 .t-num') as HTMLElement;
   const timerWrap = card.querySelector('.timer-wrap') as HTMLElement;
-  timerWrap.style.display = '';
+  const r3OtpEl = card.querySelector('.r3-otp') as HTMLElement | null;
+  const r3RingEl = card.querySelector('.r3-ring') as SVGCircleElement | null;
+  const r3NumEl = card.querySelector('.r3-t-num') as HTMLElement | null;
+  if (timerWrap) timerWrap.style.display = '';
 
   async function update(): Promise<void> {
     const conf: TotpConfig = entry.totp || { secret: entry.secret || '', algorithm: 'SHA1', digits: 6, period: 30 };
     try {
       const r: TotpResult = await computeTotp(conf);
       const d = conf.digits || 6;
-      otpEl.textContent = d === 6 ? r.code.slice(0, 3) + ' ' + r.code.slice(3) : r.code;
-      otpEl.classList.remove('masked', 'warn', 'danger');
-      if (r.remaining <= 5) otpEl.classList.add('danger');
-      else if (r.remaining <= 10) otpEl.classList.add('warn');
+      const codeText = d === 6 ? r.code.slice(0, 3) + ' ' + r.code.slice(3) : r.code;
+      if (otpEl) {
+        otpEl.textContent = codeText;
+        otpEl.classList.remove('masked', 'warn', 'danger');
+        if (r.remaining <= 5) otpEl.classList.add('danger');
+        else if (r.remaining <= 10) otpEl.classList.add('warn');
+      }
+      if (r3OtpEl) {
+        r3OtpEl.textContent = codeText;
+        r3OtpEl.classList.remove('masked', 'warn', 'danger');
+        if (r.remaining <= 5) r3OtpEl.classList.add('danger');
+        else if (r.remaining <= 10) r3OtpEl.classList.add('warn');
+      }
       const p = conf.period || 30;
-      ringEl.style.strokeDashoffset = (CIRC * (1 - r.remaining / p)).toFixed(2);
       const col = r.remaining <= 5 ? 'var(--danger)' : r.remaining <= 10 ? 'var(--warn)' : 'var(--primary)';
-      ringEl.style.stroke = col;
-      numEl.style.color = col;
-      numEl.textContent = String(r.remaining);
+      if (ringEl) {
+        ringEl.style.strokeDashoffset = (CIRC * (1 - r.remaining / p)).toFixed(2);
+        ringEl.style.stroke = col;
+        numEl.style.color = col;
+        numEl.textContent = String(r.remaining);
+      }
+      if (r3RingEl) {
+        const r3Circ = 2 * Math.PI * 16;
+        r3RingEl.style.strokeDashoffset = (r3Circ * (1 - r.remaining / p)).toFixed(2);
+        r3RingEl.style.stroke = col;
+      }
+      if (r3NumEl) {
+        r3NumEl.style.color = col;
+        r3NumEl.textContent = String(r.remaining);
+      }
     } catch {
-      otpEl.textContent = '错误';
+      if (otpEl) otpEl.textContent = '错误';
+      if (r3OtpEl) r3OtpEl.textContent = '错误';
     }
   }
 
@@ -1001,5 +1075,8 @@ function renderCreateVault(): void {
 ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   wireShell();
+  // Restore view toggle icon
+  const viewIcon = document.querySelector('#btn-view-toggle .material-icons-round');
+  if (viewIcon) viewIcon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
   await initVault();
 });
