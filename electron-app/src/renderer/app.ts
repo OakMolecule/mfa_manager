@@ -54,13 +54,8 @@ const CAT_COLORS: Record<string, string> = { work: 'var(--cat-work)', finance: '
 const CAT_LABELS: Record<string, string> = { all: '全部', work: '工作', finance: '财务', personal: '个人' };
 const CAT_MAP: Record<string, string> = { work: 'Work', finance: 'Finance', personal: 'Personal' };
 const THEME_META: ThemeMeta[] = [
-  { t: 'a', name: '紫罗兰', c1: '#FFFBFE', c2: '#6750A4' },
-  { t: 'b', name: '深蓝',   c1: '#0D1220', c2: '#4F8EF7' },
-  { t: 'c', name: '碳灰',   c1: '#1E2128', c2: '#8AB4F8' },
-  { t: 'd', name: '翠绿',   c1: '#0D1B12', c2: '#00C58E' },
-  { t: 'e', name: '玫红',   c1: '#1A0D14', c2: '#F06292' },
-  { t: 'f', name: '琥珀',   c1: '#1A1408', c2: '#F5A623' },
-  { t: 'g', name: '日光',   c1: '#FFFFFF', c2: '#0B57D0' },
+  { t: 'light', name: '白色', c1: '#FFFFFF', c2: '#1976D2' },
+  { t: 'dark',  name: '黑色', c1: '#1E1E1E', c2: '#90CAF9' },
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -140,7 +135,7 @@ function setTheme(t: string): void {
 }
 
 (function initTheme() {
-  getAppEl().dataset.theme = localStorage.getItem('theme') || 'c';
+  getAppEl().dataset.theme = localStorage.getItem('theme') || 'dark';
 })();
 
 /* ══════════════════════════════════════════════════════════════
