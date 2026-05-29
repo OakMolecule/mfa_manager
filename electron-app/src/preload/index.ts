@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('vaultxAPI', {
     deleteEntry:    (id: string)                    => ipcRenderer.invoke('vault:deleteEntry', id),
     changePassword: (oldPwd: string, newPwd: string) => ipcRenderer.invoke('vault:changePassword', oldPwd, newPwd),
     exportJson:     (filePath: string)              => ipcRenderer.invoke('vault:exportJson', filePath),
+    getCategories:  ()                              => ipcRenderer.invoke('vault:getCategories'),
+    addCategory:    (cat: unknown)                  => ipcRenderer.invoke('vault:addCategory', cat),
+    updateCategory: (cat: unknown)                  => ipcRenderer.invoke('vault:updateCategory', cat),
+    deleteCategory: (key: string)                   => ipcRenderer.invoke('vault:deleteCategory', key),
   },
 
   dialog: {

@@ -28,6 +28,15 @@ interface PasswordConfig {
   excludeAmbiguous?: boolean;
 }
 
+interface Category {
+  key: string;
+  label: string;
+  icon: string;
+  color: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
 interface VaultApi {
   check(filePath: string): Promise<{ ok: boolean; exists?: boolean; error?: string }>;
   open(filePath: string): Promise<{ ok: boolean; error?: string }>;
@@ -40,6 +49,10 @@ interface VaultApi {
   deleteEntry(id: string): Promise<{ ok: boolean; error?: string }>;
   changePassword(oldPwd: string, newPwd: string): Promise<{ ok: boolean; error?: string }>;
   exportJson(filePath: string): Promise<{ ok: boolean; error?: string }>;
+  getCategories(): Promise<{ ok: boolean; categories?: Category[]; error?: string }>;
+  addCategory(cat: Category): Promise<{ ok: boolean; error?: string }>;
+  updateCategory(cat: Category): Promise<{ ok: boolean; error?: string }>;
+  deleteCategory(key: string): Promise<{ ok: boolean; error?: string }>;
 }
 
 interface DialogApi {

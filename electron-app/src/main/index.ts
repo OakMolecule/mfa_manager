@@ -149,6 +149,49 @@ ipcMain.handle('vault:deleteEntry', async (_event, id: string) => {
   }
 });
 
+ipcMain.handle('vault:getCategories', async () => {
+  try {
+    const categories = vaultManager.getCategories();
+    resetAutoLockTimer();
+    return { ok: true, categories };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('vault:addCategory', async (_event, cat) => {
+  try {
+    vaultManager.addCategory(cat);
+    await vaultManager.save();
+    resetAutoLockTimer();
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('vault:updateCategory', async (_event, cat) => {
+  try {
+    vaultManager.updateCategory(cat);
+    await vaultManager.save();
+    resetAutoLockTimer();
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('vault:deleteCategory', async (_event, key: string) => {
+  try {
+    vaultManager.deleteCategory(key);
+    await vaultManager.save();
+    resetAutoLockTimer();
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle('vault:changePassword', async (_event, oldPassword: string, newPassword: string) => {
   try {
     await vaultManager.changePassword(oldPassword, newPassword);

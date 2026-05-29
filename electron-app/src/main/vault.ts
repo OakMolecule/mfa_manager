@@ -31,7 +31,24 @@ export interface VaultEntry {
     period?: number;
   };
   secret?: string;
+  createdAt?: number;
+  updatedAt?: number;
 }
+
+export interface Category {
+  key: string;
+  label: string;
+  icon: string;
+  color: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+const DEFAULT_CATEGORIES: Category[] = [
+  { key: 'work', label: '工作', icon: 'work', color: '#4CAF50' },
+  { key: 'finance', label: '财务', icon: 'account_balance', color: '#FF9800' },
+  { key: 'personal', label: '个人', icon: 'person', color: '#2196F3' },
+];
 
 interface VaultParams {
   salt: Buffer;
@@ -42,6 +59,7 @@ interface VaultParams {
 
 interface VaultData {
   entries: VaultEntry[];
+  categories: Category[];
 }
 
 interface VaultFile {
@@ -121,7 +139,7 @@ export class VaultManager {
       raw: true,
     })) as unknown as Buffer;
 
-    const emptyData: VaultData = { entries: [] };
+    const emptyData: VaultData = { entries: [], categories: [...DEFAULT_CATEGORIES] };
     const plaintext = Buffer.from(JSON.stringify(emptyData), 'utf-8');
     const { nonce, ciphertext } = encrypt(key, plaintext);
 
@@ -177,11 +195,17 @@ export class VaultManager {
       throw new Error('密钥派生失败');
     }
 
+    let needMigration = false;
     try {
       const nonce = Buffer.from(vaultFile.nonce, 'base64');
       const ciphertext = Buffer.from(vaultFile.ciphertext, 'base64');
       const plaintext = decrypt(key, nonce, ciphertext);
-      this.data = JSON.parse(plaintext.toString('utf-8'));
+      const parsed: VaultData = JSON.parse(plaintext.toString('utf-8'));
+      if (!parsed.categories || !parsed.categories.length) {
+        parsed.categories = [...DEFAULT_CATEGORIES];
+        needMigration = true;
+      }
+      this.data = parsed;
     } catch {
       this.failCount++;
       if (this.failCount >= 5) {
@@ -201,6 +225,7 @@ export class VaultManager {
     };
     this.failCount = 0;
     this.lockoutUntil = 0;
+    if (needMigration) await this.save();
   }
 
   lock(): void {
@@ -231,6 +256,31 @@ export class VaultManager {
   deleteEntry(id: string): void {
     if (!this.data) throw new Error('金库已锁定');
     this.data.entries = this.data.entries.filter(e => e.id !== id);
+  }
+
+  getCategories(): Category[] {
+    if (!this.data) throw new Error('金库已锁定');
+    return this.data.categories;
+  }
+
+  addCategory(cat: Category): void {
+    if (!this.data) throw new Error('金库已锁定');
+    if (this.data.categories.some(c => c.key === cat.key)) throw new Error(`分组已存在: ${cat.key}`);
+    this.data.categories.push(cat);
+  }
+
+  updateCategory(updated: Category): void {
+    if (!this.data) throw new Error('金库已锁定');
+    const idx = this.data.categories.findIndex(c => c.key === updated.key);
+    if (idx === -1) throw new Error(`分组不存在: ${updated.key}`);
+    this.data.categories[idx] = updated;
+  }
+
+  deleteCategory(key: string): void {
+    if (!this.data) throw new Error('金库已锁定');
+    const inUse = this.data.entries.some(e => (e.category || '').toLowerCase() === key);
+    if (inUse) throw new Error('该分组下仍有账户，无法删除');
+    this.data.categories = this.data.categories.filter(c => c.key !== key);
   }
 
   async save(): Promise<void> {

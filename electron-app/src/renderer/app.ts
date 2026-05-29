@@ -17,6 +17,8 @@ interface Entry {
   type?: 'totp' | 'password';
   totp?: TotpConfig;
   secret?: string;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 interface AppSettings {
@@ -28,6 +30,7 @@ interface AppSettings {
 interface AppState {
   page: string;
   entries: Entry[];
+  categories: Category[];
   filterCat: string;
   searchQ: string;
   viewMode: 'grid' | 'list';
@@ -49,10 +52,11 @@ interface ThemeMeta {
 ══════════════════════════════════════════════════════════════ */
 const CIRC = 2 * Math.PI * 16;
 const ICONS = ['🔐', '🏦', '📧', '🐙', '🍎', '🤖', '🎮', '🛒', '💼', '🏠', '💳', '🌐'];
-const CATS = ['all', 'work', 'finance', 'personal'];
-const CAT_COLORS: Record<string, string> = { work: 'var(--cat-work)', finance: 'var(--cat-finance)', personal: 'var(--cat-personal)' };
-const CAT_LABELS: Record<string, string> = { all: '全部', work: '工作', finance: '财务', personal: '个人' };
-const CAT_MAP: Record<string, string> = { work: 'Work', finance: 'Finance', personal: 'Personal' };
+const DEFAULT_CATEGORIES: Category[] = [
+  { key: 'work', label: '工作', icon: 'work', color: '#4CAF50' },
+  { key: 'finance', label: '财务', icon: 'account_balance', color: '#FF9800' },
+  { key: 'personal', label: '个人', icon: 'person', color: '#2196F3' },
+];
 const THEME_META: ThemeMeta[] = [
   { t: 'light', name: '白色', c1: '#FFFFFF', c2: '#1976D2' },
   { t: 'dark',  name: '黑色', c1: '#1E1E1E', c2: '#90CAF9' },
@@ -64,6 +68,7 @@ const THEME_META: ThemeMeta[] = [
 const S: AppState = {
   page: 'accounts',
   entries: [],
+  categories: [],
   filterCat: 'all',
   searchQ: '',
   viewMode: (localStorage.getItem('viewMode') as 'grid' | 'list') || 'grid',
@@ -74,6 +79,7 @@ const S: AppState = {
 };
 
 const cardTimers = new Map<string, ReturnType<typeof setInterval>>();
+let entryFormHTML = '';
 
 /* ══════════════════════════════════════════════════════════════
    UTILITIES
@@ -87,11 +93,10 @@ function escHtml(str: string): string {
 }
 
 function normalizeCategory(cat?: string): string {
-  if (!cat) return 'personal';
+  if (!cat) return S.categories[0]?.key || 'personal';
   const c = cat.toLowerCase();
-  if (c === 'work' || c === '工作') return 'work';
-  if (c === 'finance' || c === '财务' || c === 'financial') return 'finance';
-  return 'personal';
+  const found = S.categories.find(g => g.key === c || g.label === cat);
+  return found ? found.key : (S.categories[0]?.key || 'personal');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -174,7 +179,13 @@ function wireShell(): void {
     if ((e.target as HTMLElement).id === 'scrim') closeSheet();
   };
 
+  wireEntryForm();
+  document.addEventListener('click', closeAllMenus);
+}
+
+function wireEntryForm(): void {
   const picker = document.getElementById('icon-picker')!;
+  picker.innerHTML = '';
   ICONS.forEach(ic => {
     const opt = document.createElement('div');
     opt.className = 'icon-opt' + (ic === '🔐' ? ' picked' : '');
@@ -214,8 +225,6 @@ function wireShell(): void {
   };
 
   document.getElementById('btn-save-entry')!.onclick = () => saveEntry();
-
-  document.addEventListener('click', closeAllMenus);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -256,12 +265,16 @@ function navigatePage(page: string): void {
 function renderSidebarCats(): void {
   const el = document.getElementById('sidebar-cats');
   if (!el) return;
-  el.innerHTML = CATS.map(cat => {
-    const count = cat === 'all' ? S.entries.length : S.entries.filter(e => normalizeCategory(e.category) === cat).length;
-    const dotStyle = cat === 'all' ? 'background:var(--on-surface-v)' : `background:${CAT_COLORS[cat]}`;
-    return `<button class="scat-item${S.filterCat === cat ? ' active' : ''}" data-cat="${cat}">
-      <span class="scat-dot" style="${dotStyle}"></span>
-      <span class="scat-name">${CAT_LABELS[cat]}</span>
+  const allItem = `<button class="scat-item${S.filterCat === 'all' ? ' active' : ''}" data-cat="all">
+    <span class="scat-dot" style="background:var(--on-surface-v)"></span>
+    <span class="scat-name">全部</span>
+    <span class="scat-count">${S.entries.length}</span>
+  </button>`;
+  el.innerHTML = allItem + S.categories.map(cat => {
+    const count = S.entries.filter(e => normalizeCategory(e.category) === cat.key).length;
+    return `<button class="scat-item${S.filterCat === cat.key ? ' active' : ''}" data-cat="${cat.key}">
+      <span class="scat-dot" style="background:${cat.color}"></span>
+      <span class="scat-name">${escHtml(cat.label)}</span>
       <span class="scat-count">${count}</span>
     </button>`;
   }).join('');
@@ -304,20 +317,25 @@ function renderAccountsPage(): void {
     return;
   }
 
-  const groups: Record<string, Entry[]> = { work: [], finance: [], personal: [] };
-  list.forEach(e => groups[normalizeCategory(e.category)].push(e));
+  const groups: Record<string, Entry[]> = {};
+  S.categories.forEach(c => groups[c.key] = []);
+  list.forEach(e => {
+    const key = normalizeCategory(e.category);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
 
   const container = document.createElement('div');
   container.className = 'account-list';
 
-  (['work', 'finance', 'personal'] as const).forEach(cat => {
-    const items = groups[cat];
+  S.categories.forEach(cat => {
+    const items = groups[cat.key] || [];
     if (!items.length) return;
 
     const sec = document.createElement('div');
     sec.className = 'sec-hd';
-    sec.innerHTML = `<span class="sec-dot" style="background:${CAT_COLORS[cat]}"></span>
-      <span class="sec-label">${CAT_LABELS[cat]}</span>
+    sec.innerHTML = `<span class="sec-dot" style="background:${cat.color}"></span>
+      <span class="sec-label">${escHtml(cat.label)}</span>
       <span class="sec-line"></span>
       <span class="sec-count">${items.length}</span>`;
     container.appendChild(sec);
@@ -386,6 +404,22 @@ function buildCard(entry: Entry): HTMLElement {
   card.querySelector('.card-issuer')!.textContent = entry.issuer || entry.label || '未知';
   const label = (entry.label && entry.label !== entry.issuer) ? entry.label : (entry.username || '');
   card.querySelector('.card-label')!.textContent = label;
+
+  const relTime = (ts?: number) => {
+    if (!ts) return '—';
+    const diff = Date.now() - ts;
+    if (diff < 60_000) return '刚刚';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+    if (diff < 2_592_000_000) return `${Math.floor(diff / 86_400_000)} 天前`;
+    return `${Math.floor(diff / 2_592_000_000)} 个月前`;
+  };
+  const fullTime = (ts?: number) => ts ? new Date(ts).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+  const menuBtn = card.querySelector('.menu-btn')!;
+  const ts = document.createElement('div');
+  ts.className = 'card-ts';
+  ts.innerHTML = `<span class="ts-item" data-tip="创建于 ${fullTime(entry.createdAt)}">创建于 ${relTime(entry.createdAt)}</span><span class="ts-sep">·</span><span class="ts-item" data-tip="修改于 ${fullTime(entry.updatedAt)}">修改于 ${relTime(entry.updatedAt)}</span>`;
+  menuBtn.before(ts);
 
   buildCardR3(card, entry);
   wireCard(card, entry);
@@ -631,18 +665,30 @@ function revealTOTP(card: HTMLElement, entry: Entry): void {
 ══════════════════════════════════════════════════════════════ */
 function openAddSheet(): void {
   S.editingEntry = null;
+  document.getElementById('sheet-form')!.innerHTML = entryFormHTML;
+  wireEntryForm();
+  buildCatSelect();
   resetSheet();
   document.getElementById('scrim')!.classList.add('open');
 }
 
 function openEditSheet(entry: Entry): void {
   S.editingEntry = entry;
+  document.getElementById('sheet-form')!.innerHTML = entryFormHTML;
+  wireEntryForm();
+  buildCatSelect();
   populateSheet(entry);
   document.getElementById('scrim')!.classList.add('open');
 }
 
 function closeSheet(): void {
   document.getElementById('scrim')!.classList.remove('open');
+}
+
+function buildCatSelect(): void {
+  const sel = document.getElementById('f-cat') as HTMLSelectElement | null;
+  if (!sel) return;
+  sel.innerHTML = S.categories.map(c => `<option value="${c.key}">${escHtml(c.label)}</option>`).join('');
 }
 
 function resetSheet(): void {
@@ -662,7 +708,7 @@ function resetSheet(): void {
   (document.getElementById('f-password') as HTMLInputElement).value = '';
   (document.getElementById('f-password') as HTMLInputElement).type = 'password';
   document.getElementById('pw-eye')!.querySelector('.material-icons-round')!.textContent = 'visibility';
-  (document.getElementById('f-cat') as HTMLSelectElement).value = 'personal';
+  (document.getElementById('f-cat') as HTMLSelectElement).value = S.categories[0]?.key || 'personal';
 }
 
 function populateSheet(entry: Entry): void {
@@ -698,6 +744,7 @@ async function saveEntry(): Promise<void> {
   if (type === 'totp' && !secret) { showSnack('请填写 TOTP 密钥'); return; }
 
   const pwValue = (document.getElementById('f-password') as HTMLInputElement).value;
+  const now = Date.now();
   const entryData: Entry = {
     id: isEdit && existing ? existing.id : crypto.randomUUID(),
     icon: (document.getElementById('f-icon') as HTMLInputElement).value,
@@ -705,8 +752,10 @@ async function saveEntry(): Promise<void> {
     title: issuer,
     label: (document.getElementById('f-label') as HTMLInputElement).value.trim(),
     username: (document.getElementById('f-username') as HTMLInputElement).value.trim(),
-    category: CAT_MAP[(document.getElementById('f-cat') as HTMLSelectElement).value] || 'Personal',
+    category: (document.getElementById('f-cat') as HTMLSelectElement).value,
     type: type as 'totp' | 'password',
+    createdAt: isEdit && existing ? existing.createdAt : now,
+    updatedAt: now,
   };
 
   if (type === 'totp') {
@@ -767,27 +816,120 @@ async function refreshEntries(): Promise<void> {
 function renderGroupsPage(): void {
   const page = document.getElementById('d-page-groups');
   if (!page) return;
-  const groups = [
-    { key: 'work', label: '工作', icon: 'work', color: 'var(--cat-work)', desc: '工作相关账户' },
-    { key: 'finance', label: '财务', icon: 'account_balance', color: 'var(--cat-finance)', desc: '银行、支付、理财' },
-    { key: 'personal', label: '个人', icon: 'person', color: 'var(--cat-personal)', desc: '个人与社交账户' },
-  ];
-  page.innerHTML = '<div class="d-group-grid">' + groups.map(g => {
+  const relTime = (ts?: number) => {
+    if (!ts) return '—';
+    const diff = Date.now() - ts;
+    if (diff < 60_000) return '刚刚';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+    if (diff < 2_592_000_000) return `${Math.floor(diff / 86_400_000)} 天前`;
+    return `${Math.floor(diff / 2_592_000_000)} 个月前`;
+  };
+  const fullTime = (ts?: number) => ts ? new Date(ts).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+  const cats = S.categories;
+  page.innerHTML = '<div class="d-group-grid">' + cats.map(g => {
     const count = S.entries.filter(e => normalizeCategory(e.category) === g.key).length;
     return `<div class="d-group-card">
       <div class="d-group-card-top">
         <div class="d-group-icon" style="background:${g.color}"><span class="material-icons-round">${g.icon}</span></div>
-        <div><div class="d-group-name">${g.label}</div><div class="d-group-desc">${g.desc}</div></div>
+        <div style="flex:1;min-width:0"><div class="d-group-name">${escHtml(g.label)}</div><div class="d-group-key">${escHtml(g.key)}</div></div>
+        <div class="card-ts"><span class="ts-item" data-tip="创建于 ${fullTime(g.createdAt)}">创建于 ${relTime(g.createdAt)}</span><span class="ts-sep">·</span><span class="ts-item" data-tip="修改于 ${fullTime(g.updatedAt)}">修改于 ${relTime(g.updatedAt)}</span></div>
       </div>
       <div class="d-group-stats"><span class="d-group-stat">${count} 个账户</span></div>
       <div class="d-group-actions">
         <button class="d-group-btn" data-g="${g.key}"><span class="material-icons-round">visibility</span>查看</button>
+        <button class="d-group-btn d-group-edit" data-g="${g.key}"><span class="material-icons-round">edit</span>编辑</button>
+        <button class="d-group-btn d-group-del" data-g="${g.key}"><span class="material-icons-round">delete</span>删除</button>
       </div>
     </div>`;
-  }).join('') + '</div>';
-  page.querySelectorAll<HTMLElement>('.d-group-btn').forEach(b => {
+  }).join('') + `<div class="d-group-card d-group-add" id="btn-add-cat">
+      <div class="d-group-card-top">
+        <div class="d-group-icon" style="background:var(--on-surface-v)"><span class="material-icons-round">add</span></div>
+        <div><div class="d-group-name">添加分组</div></div>
+      </div>
+    </div></div>`;
+
+  page.querySelectorAll<HTMLElement>('.d-group-btn:not(.d-group-edit):not(.d-group-del)').forEach(b => {
     b.onclick = () => { S.filterCat = b.dataset.g!; navigatePage('accounts'); };
   });
+  page.querySelectorAll<HTMLElement>('.d-group-edit').forEach(b => {
+    b.onclick = () => openCatSheet(b.dataset.g!);
+  });
+  page.querySelectorAll<HTMLElement>('.d-group-del').forEach(b => {
+    b.onclick = () => deleteCategory(b.dataset.g!);
+  });
+  document.getElementById('btn-add-cat')?.addEventListener('click', () => openCatSheet());
+}
+
+const CAT_ICONS = ['work', 'account_balance', 'person', 'school', 'shopping_cart', 'local_hospital', 'flight', 'code', 'sports_esports', 'music_note', 'restaurant', 'pets'];
+const CAT_COLORS_PRESET = ['#4CAF50', '#FF9800', '#2196F3', '#9C27B0', '#F44336', '#00BCD4', '#795548', '#607D8B', '#E91E63', '#3F51B5', '#009688', '#FFC107'];
+
+function openCatSheet(editKey?: string): void {
+  const existing = editKey ? S.categories.find(c => c.key === editKey) : null;
+  document.getElementById('sheet-title')!.textContent = existing ? '编辑分组' : '添加分组';
+  const form = document.getElementById('sheet-form')!;
+  form.innerHTML = `
+    <div class="field"><input type="text" id="cat-label" placeholder=" " value="${existing ? escHtml(existing.label) : ''}"><label>名称</label></div>
+    <div class="field"><input type="text" id="cat-key" placeholder=" " value="${existing ? escHtml(existing.key) : ''}" ${existing ? 'readonly' : ''}><label>标识</label></div>
+    <div class="form-label-sm">图标</div>
+    <div class="icon-picker-row">${CAT_ICONS.map(ic =>
+      `<button class="icon-opt${existing?.icon === ic ? ' picked' : ''}" data-icon="${ic}"><span class="material-icons-round">${ic}</span></button>`
+    ).join('')}</div>
+    <div class="form-label-sm">颜色</div>
+    <div class="icon-picker-row">${CAT_COLORS_PRESET.map(c =>
+      `<button class="color-opt${existing?.color === c ? ' picked' : ''}" data-color="${c}" style="background:${c}"></button>`
+    ).join('')}</div>
+    <button class="btn-fill" id="btn-save-cat"><span class="material-icons-round">${existing ? 'save' : 'add'}</span>${existing ? '保存' : '添加'}</button>`;
+
+  form.querySelectorAll<HTMLElement>('.icon-opt').forEach(btn => {
+    btn.onclick = () => { form.querySelectorAll('.icon-opt').forEach(b => b.classList.remove('picked')); btn.classList.add('picked'); };
+  });
+  form.querySelectorAll<HTMLElement>('.color-opt').forEach(btn => {
+    btn.onclick = () => { form.querySelectorAll('.color-opt').forEach(b => b.classList.remove('picked')); btn.classList.add('picked'); };
+  });
+
+  document.getElementById('btn-save-cat')!.onclick = async () => {
+    const label = (document.getElementById('cat-label') as HTMLInputElement).value.trim();
+    const key = (document.getElementById('cat-key') as HTMLInputElement).value.trim().toLowerCase();
+    const icon = form.querySelector('.icon-opt.picked')?.getAttribute('data-icon') || 'label';
+    const color = form.querySelector('.color-opt.picked')?.getAttribute('data-color') || '#607D8B';
+    if (!label || !key) { showSnack('请填写名称和标识'); return; }
+    if (!/^[a-z][a-z0-9_]*$/.test(key)) { showSnack('标识只能包含小写字母、数字和下划线'); return; }
+    const now = Date.now();
+    const cat: Category = { key, label, icon, color, createdAt: existing?.createdAt ?? now, updatedAt: now };
+    try {
+      if (existing) {
+        await window.vaultxAPI.vault.updateCategory(cat);
+      } else {
+        if (S.categories.some(c => c.key === key)) { showSnack('标识已存在'); return; }
+        await window.vaultxAPI.vault.addCategory(cat);
+      }
+      const res = await window.vaultxAPI.vault.getCategories();
+      if (res.ok && res.categories) S.categories = res.categories;
+      closeSheet();
+      renderGroupsPage();
+      renderSidebarCats();
+      showSnack(existing ? '分组已更新' : '分组已添加');
+    } catch (e: any) {
+      showSnack('保存失败: ' + (e.message || e));
+    }
+  };
+  document.getElementById('scrim')!.classList.add('open');
+}
+
+async function deleteCategory(key: string): Promise<void> {
+  const count = S.entries.filter(e => normalizeCategory(e.category) === key).length;
+  if (count > 0) { showSnack(`该分组下有 ${count} 个账户，无法删除`); return; }
+  try {
+    await window.vaultxAPI.vault.deleteCategory(key);
+    const res = await window.vaultxAPI.vault.getCategories();
+    if (res.ok && res.categories) S.categories = res.categories;
+    renderGroupsPage();
+    renderSidebarCats();
+    showSnack('分组已删除');
+  } catch (e: any) {
+    showSnack('删除失败: ' + (e.message || e));
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -908,6 +1050,7 @@ async function lockVault(): Promise<void> {
   await window.vaultxAPI.vault.lock();
   S.vaultOpen = false;
   S.entries = [];
+  S.categories = [];
   renderLock();
 }
 
@@ -980,8 +1123,13 @@ function renderLock(): void {
       if (unlockR.ok) {
         lockOv.classList.remove('show');
         S.vaultOpen = true;
-        const ge = await window.vaultxAPI.vault.getEntries();
+        const [ge, gc] = await Promise.all([
+          window.vaultxAPI.vault.getEntries(),
+          window.vaultxAPI.vault.getCategories(),
+        ]);
         S.entries = ge.ok ? (ge.entries as Entry[]) : [];
+        S.categories = gc.ok && gc.categories?.length ? gc.categories : [...DEFAULT_CATEGORIES];
+        buildCatSelect();
         renderSidebarCats();
         renderSidebarStats();
         navigatePage('accounts');
@@ -1061,6 +1209,8 @@ function renderCreateVault(): void {
     lockOv.classList.remove('show');
     S.vaultOpen = true;
     S.entries = [];
+    S.categories = [...DEFAULT_CATEGORIES];
+    buildCatSelect();
     renderSidebarCats();
     renderSidebarStats();
     navigatePage('accounts');
@@ -1075,6 +1225,7 @@ function renderCreateVault(): void {
 ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   wireShell();
+  entryFormHTML = document.getElementById('sheet-form')!.innerHTML;
   await window.vaultxAPI.settings.update(S.settings);
   // Restore view toggle icon
   const viewIcon = document.querySelector('#btn-view-toggle .material-icons-round');
