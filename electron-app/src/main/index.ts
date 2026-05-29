@@ -1,6 +1,6 @@
 'use strict';
 
-import { app, BrowserWindow, ipcMain, dialog, clipboard, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, clipboard, nativeTheme, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { VaultManager } from './vault';
@@ -260,6 +260,15 @@ ipcMain.handle('dialog:exportJson', async () => {
 ipcMain.handle('util:readFile', async (_event, filePath: string) => {
   try {
     return { ok: true, content: fs.readFileSync(filePath, 'utf-8') };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('shell:openExternal', async (_event, url: string) => {
+  try {
+    await shell.openExternal(url);
+    return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e.message };
   }

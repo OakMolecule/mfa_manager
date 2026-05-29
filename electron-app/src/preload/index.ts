@@ -52,5 +52,7 @@ contextBridge.exposeInMainWorld('vaultxAPI', {
 
   readFile: (filePath: string) => ipcRenderer.invoke('util:readFile', filePath),
 
+  openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+
   pingActivity: () => ipcRenderer.send('activity:ping'),
 });

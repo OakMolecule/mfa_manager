@@ -8,6 +8,7 @@ interface ImportedEntry {
   label?: string;
   username?: string;
   password?: string;
+  url?: string;
   category?: string;
   type?: 'totp' | 'password';
   totp?: { secret: string; algorithm?: string; digits?: number; period?: number };
@@ -128,6 +129,7 @@ function parseGroup(groupEl: Element, categories: CategoryOption[]): ImportedEnt
       label: fields['Title'] || '',
       username: fields['UserName'] || '',
       password: fields['Password'] || '',
+      url: fields['URL'] || '',
       category: catKey,
       type: totpInfo?.type || 'password',
       ...times,

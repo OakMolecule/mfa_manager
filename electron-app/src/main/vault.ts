@@ -22,6 +22,7 @@ export interface VaultEntry {
   label?: string;
   username?: string;
   password?: string;
+  url?: string;
   category?: string;
   type?: 'totp' | 'password';
   totp?: {

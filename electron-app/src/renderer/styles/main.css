@@ -316,6 +316,7 @@ body {
 .cards-grid:not(.list-view) .r3-timer-wrap{display:none;}
 .cards-grid:not(.list-view) .r3-otp-copy{display:none;}
 .cards-grid:not(.list-view) .r3-divider{display:none;}
+.cards-grid:not(.list-view) .r3-url{display:none;}
 .cards-grid:not(.list-view) .r3-section{display:contents;}
 
 /* ── Card ── */
@@ -369,6 +370,7 @@ body {
   min-width:140px;
 }
 .ctx-menu.open{opacity:1;transform:scale(1) translateY(0);pointer-events:all;}
+.card:has(.ctx-menu.open){z-index:10;}
 .ctx-item{
   display:flex;align-items:center;gap:10px;
   padding:9px 12px;border-radius:8px;
@@ -454,6 +456,15 @@ body {
   flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .card-r3 .cred-val.masked-pw{color:var(--on-surface-v);letter-spacing:2px;}
+.r3-url{
+  display:flex;align-items:center;gap:4px;
+  cursor:pointer;color:var(--on-surface-v);flex:1;min-width:0;
+}
+.r3-url:hover{color:var(--primary);}
+.r3-url .material-icons-round{font-size:14px;flex-shrink:0;}
+.r3-url .url-text{
+  font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 .pw-toggle{
   width:26px;height:26px;border-radius:50%;border:none;
   background:transparent;color:var(--on-surface-v);cursor:pointer;

@@ -91,6 +91,7 @@ interface VaultXAPI {
   settings: SettingsApi;
   onVaultLocked(cb: () => void): void;
   readFile(filePath: string): Promise<{ ok: boolean; content?: string; error?: string }>;
+  openExternal(url: string): Promise<{ ok: boolean; error?: string }>;
   pingActivity(): void;
 }
 

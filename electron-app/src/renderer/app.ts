@@ -14,6 +14,7 @@ interface Entry {
   label?: string;
   username?: string;
   password?: string;
+  url?: string;
   category?: string;
   type?: 'totp'|'password';
   totp?: TotpConfig;
@@ -527,9 +528,14 @@ function buildCardR3(card: HTMLElement, entry: Entry): void {
   }
 
   let html = '';
+  if (entry.url) {
+    html +=
+        `<span class="r3-section r3-url" data-url="${escHtml(entry.url)}"><span class="material-icons-round">link</span><span class="url-text">${
+            escHtml(entry.url)}</span></span>`;
+  }
   if (entry.username) {
     html +=
-        `<span class="r3-section"><span class="cred-label">用户</span><span class="cred-val">${
+        `<span class="r3-divider"></span><span class="r3-section"><span class="cred-label">用户</span><span class="cred-val">${
             escHtml(entry.username)}</span></span>`;
   }
   if (entry.password) {
@@ -584,6 +590,15 @@ function wireCard(card: HTMLElement, entry: Entry): void {
         closeAllMenus();
         confirmDelete(entry);
       };
+
+  const urlEl = card.querySelector('.r3-url') as HTMLElement | null;
+  if (urlEl) {
+    urlEl.onclick = (e) => {
+      e.stopPropagation();
+      const url = urlEl.dataset.url;
+      if (url) window.vaultxAPI.openExternal(url);
+    };
+  }
 
   if (type === 'totp') {
     wireTotpCard(card, entry);
@@ -831,6 +846,7 @@ function resetSheet(): void {
   (document.getElementById('f-issuer') as HTMLInputElement).value = '';
   (document.getElementById('f-label') as HTMLInputElement).value = '';
   (document.getElementById('f-username') as HTMLInputElement).value = '';
+  (document.getElementById('f-url') as HTMLInputElement).value = '';
   (document.getElementById('f-secret') as HTMLInputElement).value = '';
   (document.getElementById('f-algo') as HTMLSelectElement).value = 'SHA1';
   (document.getElementById('f-period') as HTMLSelectElement).value = '30';
@@ -865,6 +881,8 @@ function populateSheet(entry: Entry): void {
       entry.label || '';
   (document.getElementById('f-username') as HTMLInputElement).value =
       entry.username || '';
+  (document.getElementById('f-url') as HTMLInputElement).value =
+      entry.url || '';
   (document.getElementById('f-password') as HTMLInputElement).value =
       entry.password || '';
   if (type === 'totp') {
@@ -909,6 +927,7 @@ async function saveEntry(): Promise<void> {
         (document.getElementById('f-label') as HTMLInputElement).value.trim(),
     username: (document.getElementById('f-username') as HTMLInputElement)
                   .value.trim(),
+    url: (document.getElementById('f-url') as HTMLInputElement).value.trim(),
     category: (document.getElementById('f-cat') as HTMLSelectElement).value,
     type: type as 'totp' | 'password',
     createdAt: isEdit && existing ? existing.createdAt : now,
