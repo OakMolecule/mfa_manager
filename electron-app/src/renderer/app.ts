@@ -293,6 +293,8 @@ function navigatePage(page: string): void {
       isAccounts ? '' : 'none';
   document.getElementById('btn-export')!.style.display =
       isAccounts ? '' : 'none';
+  document.getElementById('btn-batch')!.style.display =
+      isAccounts ? '' : 'none';
 
   if (isAccounts)
     renderAccountsPage();
@@ -1424,17 +1426,19 @@ async function importVault(): Promise<void> {
     const unmatched = collectUnmatchedGroups(file.content, catOptions);
     const existingKeys = new Set(S.categories.map(c => c.key));
     let catIdx = S.categories.length;
-    for (const name of unmatched) {
+    for (const g of unmatched) {
       let key =
-          name.toLowerCase().replace(/[^a-z0-9一-鿿]/g, '').slice(0, 20) ||
+          g.name.toLowerCase().replace(/[^a-z0-9一-鿿]/g, '').slice(0, 20) ||
           'cat' + catIdx;
       if (existingKeys.has(key)) key += catIdx;
       existingKeys.add(key);
       await window.vaultxAPI.vault.addCategory({
         key,
-        label: name,
+        label: g.name,
         icon: CAT_ICONS[catIdx % CAT_ICONS.length],
         color: CAT_COLORS_PRESET[catIdx % CAT_COLORS_PRESET.length],
+        createdAt: g.createdAt,
+        updatedAt: g.updatedAt,
       });
       catIdx++;
     }

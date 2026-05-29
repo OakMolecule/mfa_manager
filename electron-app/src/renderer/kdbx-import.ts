@@ -154,22 +154,31 @@ function parseGroup(groupEl: Element, categories: CategoryOption[]): ImportedEnt
   return entries;
 }
 
-function collectGroupNames(groupEl: Element, names: Set<string>, categories: CategoryOption[]): void {
+interface GroupMeta { name: string; createdAt?: number; updatedAt?: number }
+
+function collectGroupNames(groupEl: Element, results: Map<string, GroupMeta>, categories: CategoryOption[]): void {
   const groupName = getText(groupEl, 'Name');
   if (groupName && !categories.find(c => c.label.toLowerCase() === groupName.toLowerCase() || c.key.toLowerCase() === groupName.toLowerCase())) {
-    names.add(groupName);
+    if (!results.has(groupName)) {
+      const times = groupEl.getElementsByTagName('Times')[0];
+      results.set(groupName, {
+        name: groupName,
+        createdAt: times ? parseISODate(getText(times, 'CreationTime')) : undefined,
+        updatedAt: times ? parseISODate(getText(times, 'LastModificationTime')) : undefined,
+      });
+    }
   }
   const subGroups = Array.from(groupEl.children).filter(c => c.tagName === 'Group');
-  for (const sub of subGroups) collectGroupNames(sub, names, categories);
+  for (const sub of subGroups) collectGroupNames(sub, results, categories);
 }
 
-export function collectUnmatchedGroups(xml: string, categories: CategoryOption[]): string[] {
+export function collectUnmatchedGroups(xml: string, categories: CategoryOption[]): GroupMeta[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xml, 'text/xml');
-  const names = new Set<string>();
+  const results = new Map<string, GroupMeta>();
   const rootGroups = doc.querySelectorAll('Root > Group');
-  rootGroups.forEach(group => collectGroupNames(group, names, categories));
-  return [...names];
+  rootGroups.forEach(group => collectGroupNames(group, results, categories));
+  return [...results.values()];
 }
 
 export function parseKeePassXml(xml: string, categories: CategoryOption[]): ImportedEntry[] {
