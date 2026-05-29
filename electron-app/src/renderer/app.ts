@@ -118,7 +118,7 @@ function showSnack(msg: string, action?: string, onAction?: () => void): void {
 
 async function copyText(text: string, feedbackEl?: HTMLElement | null): Promise<void> {
   await window.vaultxAPI.clipboard.write(text);
-  showSnack('已复制，将在 30 秒后自动清除剪贴板');
+  showSnack(`已复制，将在 ${S.settings.clipboardClearSeconds} 秒后自动清除剪贴板`);
   if (feedbackEl) {
     feedbackEl.classList.add('copied');
     setTimeout(() => feedbackEl.classList.remove('copied'), 1500);
@@ -1075,6 +1075,7 @@ function renderCreateVault(): void {
 ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   wireShell();
+  await window.vaultxAPI.settings.update(S.settings);
   // Restore view toggle icon
   const viewIcon = document.querySelector('#btn-view-toggle .material-icons-round');
   if (viewIcon) viewIcon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
