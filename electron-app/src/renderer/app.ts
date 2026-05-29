@@ -26,7 +26,7 @@ interface Entry {
 interface AppSettings {
   autoLockTimeout: number;
   clipboardClearSeconds: number;
-  maxErrorCount: number;
+  revealHideSeconds: number;
 }
 
 interface AppState {
@@ -76,18 +76,19 @@ const S: AppState = {
   categories: [],
   filterCat: 'all',
   searchQ: '',
-  viewMode: (localStorage.getItem('viewMode') as 'grid' | 'list') || 'grid',
+  viewMode: (localStorage.getItem('viewMode') as 'grid' | 'list') || 'list',
   vaultPath: localStorage.getItem('vaultPath') || null,
   vaultOpen: false,
   settings: JSON.parse(
       localStorage.getItem('settings') ||
-      '{"autoLockTimeout":300,"clipboardClearSeconds":30,"maxErrorCount":5}'),
+      '{"autoLockTimeout":300,"clipboardClearSeconds":30,"revealHideSeconds":30}'),
   editingEntry: null,
   batchMode: false,
   selectedIds: new Set(),
 };
 
 const cardTimers = new Map<string, ReturnType<typeof setInterval>>();
+const revealTimers = new Map<string, ReturnType<typeof setTimeout>>();
 let entryFormHTML = '';
 
 /* ══════════════════════════════════════════════════════════════
@@ -189,7 +190,6 @@ function wireShell(): void {
 
   document.getElementById('tb-lock')!.onclick = () => lockVault();
   document.getElementById('btn-add-entry')!.onclick = () => openAddSheet();
-  document.getElementById('btn-view-toggle')!.onclick = () => toggleViewMode();
   document.getElementById('btn-import')!.onclick = () => importVault();
   document.getElementById('btn-export')!.onclick = () => exportVault();
   document.getElementById('btn-batch')!.onclick = () => toggleBatchMode();
@@ -262,6 +262,36 @@ function wireEntryForm(): void {
     }
   };
 
+  // Parse otpauth:// URI when pasted into secret field
+  const secretInput = document.getElementById('f-secret') as HTMLInputElement;
+  secretInput.addEventListener('input', () => {
+    const val = secretInput.value.trim();
+    if (!val.startsWith('otpauth://')) return;
+    try {
+      const url = new URL(val);
+      const secret = url.searchParams.get('secret');
+      const issuer = url.searchParams.get('issuer');
+      const algorithm = url.searchParams.get('algorithm');
+      const period = url.searchParams.get('period');
+      secretInput.value = secret || '';
+      // Fill issuer & label from params or path
+      const label = decodeURIComponent(url.pathname.replace(/^\//, ''));
+      const colonIdx = label.indexOf(':');
+      const labelIssuer = colonIdx > 0 ? label.substring(0, colonIdx) : '';
+      const labelName = colonIdx > 0 ? label.substring(colonIdx + 1) : label;
+      (document.getElementById('f-issuer') as HTMLInputElement).value =
+          issuer || labelIssuer;
+      (document.getElementById('f-label') as HTMLInputElement).value = labelName;
+      // Algorithm: use URI param or default to SHA1
+      const algoUpper = (algorithm || 'SHA1').toUpperCase().replace(/-/g, '');
+      const algoVal = ['SHA1', 'SHA256', 'SHA512'].includes(algoUpper) ? algoUpper : 'SHA1';
+      (document.getElementById('f-algo') as HTMLSelectElement).value = algoVal;
+      // Period: use URI param or default to 30
+      const periodVal = period || '30';
+      (document.getElementById('f-period') as HTMLSelectElement).value = periodVal;
+    } catch { /* ignore invalid URI */ }
+  });
+
   document.getElementById('btn-save-entry')!.onclick = () => saveEntry();
 }
 
@@ -286,8 +316,6 @@ function navigatePage(page: string): void {
 
   const isAccounts = page === 'accounts';
   document.getElementById('toolbar-search')!.style.display =
-      isAccounts ? '' : 'none';
-  document.getElementById('btn-view-toggle')!.style.display =
       isAccounts ? '' : 'none';
   document.getElementById('btn-import')!.style.display =
       isAccounts ? '' : 'none';
@@ -447,15 +475,6 @@ function filterCardsBySearch(): void {
 
   document.getElementById('ct-sub')!.textContent =
       q ? `${visibleCount} 个匹配` : `${S.entries.length} 个账户`;
-}
-
-function toggleViewMode(): void {
-  S.viewMode = S.viewMode === 'grid' ? 'list' : 'grid';
-  localStorage.setItem('viewMode', S.viewMode);
-  const icon = document.querySelector('#btn-view-toggle .material-icons-round');
-  if (icon)
-    icon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
-  if (S.page === 'accounts') renderAccountsPage();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -672,6 +691,7 @@ function wirePasswordCard(card: HTMLElement, entry: Entry): void {
     }
 
     card.classList.toggle('revealed');
+    if (card.classList.contains('revealed')) startRevealTimer(card, entry.id);
   };
 }
 
@@ -731,10 +751,38 @@ function closeAllMenus(): void {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   REVEAL AUTO-HIDE TIMER
+══════════════════════════════════════════════════════════════ */
+function startRevealTimer(card: HTMLElement, id: string): void {
+  if (revealTimers.has(id)) clearTimeout(revealTimers.get(id)!);
+  const sec = S.settings.revealHideSeconds;
+  if (sec <= 0) return;
+  revealTimers.set(id, setTimeout(() => {
+    // Hide TOTP: stop interval, restore masked
+    const interval = cardTimers.get(id);
+    if (interval) { clearInterval(interval); cardTimers.delete(id); }
+    card.querySelectorAll('.otp').forEach(el => el.classList.add('masked'));
+    card.querySelectorAll('.r3-otp').forEach(el => el.classList.add('masked'));
+    // Hide password
+    card.querySelectorAll('.pw-display').forEach(el => {
+      el.classList.remove('revealed-pw');
+      el.textContent = '••••••••';
+    });
+    card.querySelectorAll('.cred-val').forEach(el => {
+      el.classList.add('masked-pw');
+      el.classList.remove('revealed-pw');
+    });
+    card.classList.remove('revealed');
+    revealTimers.delete(id);
+  }, sec * 1000));
+}
+
+/* ══════════════════════════════════════════════════════════════
    TOTP REVEAL & TIMER
 ══════════════════════════════════════════════════════════════ */
 function revealTOTP(card: HTMLElement, entry: Entry): void {
   card.classList.add('revealed');
+  startRevealTimer(card, entry.id);
   const otpEl = card.querySelector('.card-r2 .otp') as HTMLElement;
   const ringEl = card.querySelector('.card-r2 .t-ring') as SVGCircleElement;
   const numEl = card.querySelector('.card-r2 .t-num') as HTMLElement;
@@ -1360,6 +1408,18 @@ function renderSettingsPage(): void {
                           ''}>${s}秒</option>`)
               .join('')}</select></div>
         </div>
+        <div class="s-item no-tap">
+          <div class="s-body"><div class="s-label">自动隐藏</div><div class="s-sub">显示后自动隐藏密码/验证码</div></div>
+          <div class="s-ctrl"><select class="s-select" id="st-reveal-hide">${
+          [10, 30, 60, 0]
+              .map(
+                  s => `<option value="${s}"${
+                      S.settings.revealHideSeconds === s ?
+                          ' selected' :
+                          ''}>${
+                      s === 0 ? '不自动隐藏' : s + '秒'}</option>`)
+              .join('')}</select></div>
+        </div>
       </div>
       <div class="settings-card">
         <div class="settings-card-hd">数据</div>
@@ -1394,6 +1454,11 @@ function renderSettingsPage(): void {
   };
   (page.querySelector('#st-clip') as HTMLSelectElement).onchange = (e) => {
     S.settings.clipboardClearSeconds =
+        parseInt((e.target as HTMLSelectElement).value);
+    saveSettings();
+  };
+  (page.querySelector('#st-reveal-hide') as HTMLSelectElement).onchange = (e) => {
+    S.settings.revealHideSeconds =
         parseInt((e.target as HTMLSelectElement).value);
     saveSettings();
   };
@@ -1526,6 +1591,7 @@ function renderLock(): void {
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${
       escHtml(S.vaultPath || '未知路径')}</span>
         <button class="lock-link" id="lock-change">切换</button>
+        <button class="lock-link" id="lock-create">新建</button>
       </div>
     </div>`;
   lockOv.classList.add('show');
@@ -1597,6 +1663,8 @@ function renderLock(): void {
 
   (lockOv.querySelector('#lock-change') as HTMLElement).onclick = () =>
       changeVault();
+  (lockOv.querySelector('#lock-create') as HTMLElement).onclick = () =>
+      renderCreateVault();
   setTimeout(() => pwInput.focus(), 100);
 }
 
@@ -1619,6 +1687,7 @@ function renderCreateVault(): void {
       <div class="lock-vault-row">
         <span class="material-icons-round">storage</span>
         <button class="lock-link" id="create-choose">选择保存位置</button>
+        ${S.vaultPath ? '<button class="lock-link" id="create-back">返回解锁</button>' : ''}
       </div>
     </div>`;
   lockOv.classList.add('show');
@@ -1635,12 +1704,15 @@ function renderCreateVault(): void {
         s ? 'visibility_off' : 'visibility';
   };
 
+  let newPath: string | null = null;
+  const backBtn = lockOv.querySelector('#create-back') as HTMLElement | null;
+  if (backBtn) backBtn.onclick = () => renderLock();
+
   (lockOv.querySelector('#create-choose') as HTMLElement).onclick =
       async () => {
     const path = await window.vaultxAPI.dialog.saveFile();
     if (path) {
-      S.vaultPath = path;
-      localStorage.setItem('vaultPath', path);
+      newPath = path;
       showSnack('位置: ' + path);
     }
   };
@@ -1663,7 +1735,12 @@ function renderCreateVault(): void {
       errEl.classList.add('show');
       return;
     }
-    const path = S.vaultPath || (Date.now() + '.vaultx');
+    if (!newPath) {
+      errEl.textContent = '请先选择保存位置';
+      errEl.classList.add('show');
+      return;
+    }
+    const path = newPath;
     const r = await window.vaultxAPI.vault.create(path, p1);
     if (!r.ok) {
       errEl.textContent = '创建失败: ' + (r.error || '未知错误');
@@ -1693,10 +1770,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireShell();
   entryFormHTML = document.getElementById('sheet-form')!.innerHTML;
   await window.vaultxAPI.settings.update(S.settings);
-  // Restore view toggle icon
-  const viewIcon =
-      document.querySelector('#btn-view-toggle .material-icons-round');
-  if (viewIcon)
-    viewIcon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
   await initVault();
 });

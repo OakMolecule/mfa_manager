@@ -747,7 +747,7 @@ body {
 .toggle-sw.on::after{transform:translateX(18px);}
 
 .s-select{
-  height:28px;padding:0 20px 0 8px;border-radius:7px;
+  height:28px;min-width:100px;padding:0 20px 0 8px;border-radius:7px;
   border:1px solid var(--outline2);background:var(--surface3);
   color:var(--on-surface);font-size:12px;font-family: inherit;
   outline:none;cursor:pointer;transition:border-color .2s,background .3s;
