@@ -127,6 +127,17 @@ ipcMain.handle('vault:addEntry', async (_event, entry) => {
   }
 });
 
+ipcMain.handle('vault:importEntries', async (_event, entries) => {
+  try {
+    for (const entry of entries) vaultManager.addEntry(entry);
+    await vaultManager.save();
+    resetAutoLockTimer();
+    return { ok: true, count: entries.length };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle('vault:updateEntry', async (_event, entry) => {
   try {
     vaultManager.updateEntry(entry);
@@ -144,6 +155,17 @@ ipcMain.handle('vault:deleteEntry', async (_event, id: string) => {
     await vaultManager.save();
     resetAutoLockTimer();
     return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('vault:deleteEntries', async (_event, ids: string[]) => {
+  try {
+    for (const id of ids) vaultManager.deleteEntry(id);
+    await vaultManager.save();
+    resetAutoLockTimer();
+    return { ok: true, count: ids.length };
   } catch (e: any) {
     return { ok: false, error: e.message };
   }
@@ -211,6 +233,14 @@ ipcMain.handle('dialog:openFile', async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+ipcMain.handle('dialog:openImportXml', async () => {
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    filters: [{ name: 'KeePass XML', extensions: ['xml'] }],
+    properties: ['openFile'],
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+
 ipcMain.handle('dialog:saveFile', async () => {
   const result = await dialog.showSaveDialog(mainWindow!, {
     defaultPath: 'vault.vaultx',
@@ -225,6 +255,14 @@ ipcMain.handle('dialog:exportJson', async () => {
     filters: [{ name: 'JSON Files', extensions: ['json'] }],
   });
   return result.canceled ? null : result.filePath;
+});
+
+ipcMain.handle('util:readFile', async (_event, filePath: string) => {
+  try {
+    return { ok: true, content: fs.readFileSync(filePath, 'utf-8') };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
 });
 
 // ── IPC: 剪贴板 ───────────────────────────────────────────────────────────

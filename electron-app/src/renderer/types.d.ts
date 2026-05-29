@@ -45,8 +45,10 @@ interface VaultApi {
   lock(): Promise<{ ok: boolean }>;
   getEntries(): Promise<{ ok: boolean; entries?: any[]; error?: string }>;
   addEntry(entry: any): Promise<{ ok: boolean; error?: string }>;
+  importEntries(entries: any[]): Promise<{ ok: boolean; count?: number; error?: string }>;
   updateEntry(entry: any): Promise<{ ok: boolean; error?: string }>;
   deleteEntry(id: string): Promise<{ ok: boolean; error?: string }>;
+  deleteEntries(ids: string[]): Promise<{ ok: boolean; count?: number; error?: string }>;
   changePassword(oldPwd: string, newPwd: string): Promise<{ ok: boolean; error?: string }>;
   exportJson(filePath: string): Promise<{ ok: boolean; error?: string }>;
   getCategories(): Promise<{ ok: boolean; categories?: Category[]; error?: string }>;
@@ -57,6 +59,7 @@ interface VaultApi {
 
 interface DialogApi {
   openFile(): Promise<string | null>;
+  openImportXml(): Promise<string | null>;
   saveFile(): Promise<string | null>;
   exportJson(): Promise<string | null>;
 }
@@ -87,6 +90,7 @@ interface VaultXAPI {
   theme: ThemeApi;
   settings: SettingsApi;
   onVaultLocked(cb: () => void): void;
+  readFile(filePath: string): Promise<{ ok: boolean; content?: string; error?: string }>;
   pingActivity(): void;
 }
 

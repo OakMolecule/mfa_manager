@@ -118,7 +118,9 @@ body {
   font-size:10px;font-weight:700;letter-spacing:1.2px;
   text-transform:uppercase;color:var(--on-surface-v);
 }
-.sidebar-cats{padding:0 8px;}
+.sidebar-cats{padding:0 8px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--outline) transparent;}
+.sidebar-cats::-webkit-scrollbar{width:4px;}
+.sidebar-cats::-webkit-scrollbar-thumb{background:var(--outline);border-radius:4px;}
 .scat-item {
   width:100%;height:32px;border-radius:8px;border:none;
   background:transparent;color:var(--on-surface-v);
@@ -141,7 +143,7 @@ body {
 }
 .scat-item.active .scat-count{background:rgba(0,0,0,.15);}
 
-.sidebar-spacer{flex:1;}
+.sidebar-spacer{flex:0;}
 
 .sidebar-stats{
   padding:8px 18px 10px;
@@ -210,6 +212,37 @@ body {
 .icon-btn:hover{background:rgba(128,128,128,.12);}
 .icon-btn .material-icons-round{font-size:20px;}
 .icon-btn.round{border-radius:50%;}
+.icon-btn.active{color:var(--primary);background:rgba(33,150,243,.1);}
+
+.batch-bar{
+  display:none;align-items:center;gap:12px;
+  padding:8px 16px;border-bottom:1px solid var(--outline2);
+  animation:fadeUp .2s ease;
+}
+.batch-bar.show{display:flex;}
+.batch-btn{
+  height:30px;border:none;border-radius:8px;
+  background:var(--surface3);color:var(--on-surface);
+  font-size:12px;font-weight:600;padding:0 12px;cursor:pointer;
+  display:flex;align-items:center;gap:4px;transition:background .15s;
+}
+.batch-btn:hover{background:var(--outline2);}
+.batch-btn .material-icons-round{font-size:16px;}
+.batch-btn-del{background:var(--error,#d32f2f);color:#fff;}
+.batch-btn-del:hover{opacity:.85;}
+.batch-count{font-size:12px;color:var(--on-surface-v);margin:0 auto;}
+
+.batch-mode .cards-grid{padding-left:36px;}
+.card .card-check{
+  position:absolute;top:14px;left:-30px;z-index:2;
+  width:24px;height:24px;border-radius:50%;
+  border:2px solid var(--outline);background:var(--card);
+  cursor:pointer;display:none;align-items:center;justify-content:center;
+  transition:border-color .15s,background .15s;
+}
+.batch-mode .card .card-check{display:flex;}
+.card .card-check.checked{border-color:var(--primary);background:var(--primary);}
+.card .card-check.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:700;}
 
 /* ── Account List ── */
 .account-list{

@@ -11,8 +11,10 @@ contextBridge.exposeInMainWorld('vaultxAPI', {
     lock:           ()                              => ipcRenderer.invoke('vault:lock'),
     getEntries:     ()                              => ipcRenderer.invoke('vault:getEntries'),
     addEntry:       (entry: unknown)                => ipcRenderer.invoke('vault:addEntry', entry),
+    importEntries:  (entries: unknown[])             => ipcRenderer.invoke('vault:importEntries', entries),
     updateEntry:    (entry: unknown)                => ipcRenderer.invoke('vault:updateEntry', entry),
     deleteEntry:    (id: string)                    => ipcRenderer.invoke('vault:deleteEntry', id),
+    deleteEntries:  (ids: string[])                 => ipcRenderer.invoke('vault:deleteEntries', ids),
     changePassword: (oldPwd: string, newPwd: string) => ipcRenderer.invoke('vault:changePassword', oldPwd, newPwd),
     exportJson:     (filePath: string)              => ipcRenderer.invoke('vault:exportJson', filePath),
     getCategories:  ()                              => ipcRenderer.invoke('vault:getCategories'),
@@ -22,9 +24,10 @@ contextBridge.exposeInMainWorld('vaultxAPI', {
   },
 
   dialog: {
-    openFile:   () => ipcRenderer.invoke('dialog:openFile'),
-    saveFile:   () => ipcRenderer.invoke('dialog:saveFile'),
-    exportJson: () => ipcRenderer.invoke('dialog:exportJson'),
+    openFile:      () => ipcRenderer.invoke('dialog:openFile'),
+    openImportXml: () => ipcRenderer.invoke('dialog:openImportXml'),
+    saveFile:      () => ipcRenderer.invoke('dialog:saveFile'),
+    exportJson:    () => ipcRenderer.invoke('dialog:exportJson'),
   },
 
   clipboard: {
@@ -46,6 +49,8 @@ contextBridge.exposeInMainWorld('vaultxAPI', {
   },
 
   onVaultLocked: (cb: () => void) => ipcRenderer.on('vault:locked', cb),
+
+  readFile: (filePath: string) => ipcRenderer.invoke('util:readFile', filePath),
 
   pingActivity: () => ipcRenderer.send('activity:ping'),
 });

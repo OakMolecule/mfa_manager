@@ -1,6 +1,7 @@
 'use strict';
 
-import { computeTotp, type TotpConfig, type TotpResult } from './totp';
+import {computeTotp, type TotpConfig, type TotpResult} from './totp';
+import {parseKeePassXml, collectUnmatchedGroups} from './kdbx-import';
 
 /* ══════════════════════════════════════════════════════════════
    INTERFACES
@@ -14,7 +15,7 @@ interface Entry {
   username?: string;
   password?: string;
   category?: string;
-  type?: 'totp' | 'password';
+  type?: 'totp'|'password';
   totp?: TotpConfig;
   secret?: string;
   createdAt?: number;
@@ -33,11 +34,13 @@ interface AppState {
   categories: Category[];
   filterCat: string;
   searchQ: string;
-  viewMode: 'grid' | 'list';
-  vaultPath: string | null;
+  viewMode: 'grid'|'list';
+  vaultPath: string|null;
   vaultOpen: boolean;
   settings: AppSettings;
-  editingEntry: Entry | null;
+  editingEntry: Entry|null;
+  batchMode: boolean;
+  selectedIds: Set<string>;
 }
 
 interface ThemeMeta {
@@ -51,15 +54,16 @@ interface ThemeMeta {
    CONSTANTS
 ══════════════════════════════════════════════════════════════ */
 const CIRC = 2 * Math.PI * 16;
-const ICONS = ['🔐', '🏦', '📧', '🐙', '🍎', '🤖', '🎮', '🛒', '💼', '🏠', '💳', '🌐'];
+const ICONS =
+    ['🔐', '🏦', '📧', '🐙', '🍎', '🤖', '🎮', '🛒', '💼', '🏠', '💳', '🌐'];
 const DEFAULT_CATEGORIES: Category[] = [
-  { key: 'work', label: '工作', icon: 'work', color: '#4CAF50' },
-  { key: 'finance', label: '财务', icon: 'account_balance', color: '#FF9800' },
-  { key: 'personal', label: '个人', icon: 'person', color: '#2196F3' },
+  {key: 'work', label: '工作', icon: 'work', color: '#4CAF50'},
+  {key: 'finance', label: '财务', icon: 'account_balance', color: '#FF9800'},
+  {key: 'personal', label: '个人', icon: 'person', color: '#2196F3'},
 ];
 const THEME_META: ThemeMeta[] = [
-  { t: 'light', name: '白色', c1: '#FFFFFF', c2: '#1976D2' },
-  { t: 'dark',  name: '黑色', c1: '#1E1E1E', c2: '#90CAF9' },
+  {t: 'light', name: '白色', c1: '#FFFFFF', c2: '#1976D2'},
+  {t: 'dark', name: '黑色', c1: '#1E1E1E', c2: '#90CAF9'},
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -74,8 +78,12 @@ const S: AppState = {
   viewMode: (localStorage.getItem('viewMode') as 'grid' | 'list') || 'grid',
   vaultPath: localStorage.getItem('vaultPath') || null,
   vaultOpen: false,
-  settings: JSON.parse(localStorage.getItem('settings') || '{"autoLockTimeout":300,"clipboardClearSeconds":30,"maxErrorCount":5}'),
+  settings: JSON.parse(
+      localStorage.getItem('settings') ||
+      '{"autoLockTimeout":300,"clipboardClearSeconds":30,"maxErrorCount":5}'),
   editingEntry: null,
+  batchMode: false,
+  selectedIds: new Set(),
 };
 
 const cardTimers = new Map<string, ReturnType<typeof setInterval>>();
@@ -84,12 +92,22 @@ let entryFormHTML = '';
 /* ══════════════════════════════════════════════════════════════
    UTILITIES
 ══════════════════════════════════════════════════════════════ */
-function $(sel: string): HTMLElement | null { return document.querySelector(sel); }
-function $$(sel: string): NodeListOf<HTMLElement> { return document.querySelectorAll(sel); }
-function getAppEl(): HTMLElement { return document.getElementById('app')!; }
+function $(sel: string): HTMLElement|null {
+  return document.querySelector(sel);
+}
+function $$(sel: string): NodeListOf<HTMLElement> {
+  return document.querySelectorAll(sel);
+}
+function getAppEl(): HTMLElement {
+  return document.getElementById('app')!;
+}
 
 function escHtml(str: string): string {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
 }
 
 function normalizeCategory(cat?: string): string {
@@ -102,7 +120,7 @@ function normalizeCategory(cat?: string): string {
 /* ══════════════════════════════════════════════════════════════
    SNACKBAR & CLIPBOARD
 ══════════════════════════════════════════════════════════════ */
-let snackTimer: ReturnType<typeof setTimeout> | null = null;
+let snackTimer: ReturnType<typeof setTimeout>|null = null;
 
 function showSnack(msg: string, action?: string, onAction?: () => void): void {
   const snack = document.getElementById('snack');
@@ -121,9 +139,11 @@ function showSnack(msg: string, action?: string, onAction?: () => void): void {
   snackTimer = setTimeout(() => snack.classList.remove('show'), 2800);
 }
 
-async function copyText(text: string, feedbackEl?: HTMLElement | null): Promise<void> {
+async function copyText(
+    text: string, feedbackEl?: HTMLElement|null): Promise<void> {
   await window.vaultxAPI.clipboard.write(text);
-  showSnack(`已复制，将在 ${S.settings.clipboardClearSeconds} 秒后自动清除剪贴板`);
+  showSnack(
+      `已复制，将在 ${S.settings.clipboardClearSeconds} 秒后自动清除剪贴板`);
   if (feedbackEl) {
     feedbackEl.classList.add('copied');
     setTimeout(() => feedbackEl.classList.remove('copied'), 1500);
@@ -146,8 +166,10 @@ function setTheme(t: string): void {
 /* ══════════════════════════════════════════════════════════════
    ACTIVITY & AUTO-LOCK LISTENER
 ══════════════════════════════════════════════════════════════ */
-(['mousemove', 'keydown', 'click', 'scroll'] as const).forEach(ev =>
-  document.addEventListener(ev, () => window.vaultxAPI.pingActivity(), { passive: true }));
+(['mousemove', 'keydown', 'click', 'scroll'] as const)
+    .forEach(
+        ev => document.addEventListener(
+            ev, () => window.vaultxAPI.pingActivity(), {passive: true}));
 
 window.vaultxAPI.onVaultLocked(() => {
   S.vaultOpen = false;
@@ -169,10 +191,16 @@ function wireShell(): void {
   document.getElementById('btn-view-toggle')!.onclick = () => toggleViewMode();
   document.getElementById('btn-import')!.onclick = () => importVault();
   document.getElementById('btn-export')!.onclick = () => exportVault();
-  (document.getElementById('search-input') as HTMLInputElement).oninput = (e) => {
-    S.searchQ = (e.target as HTMLInputElement).value.toLowerCase();
-    filterCardsBySearch();
-  };
+  document.getElementById('btn-batch')!.onclick = () => toggleBatchMode();
+  document.getElementById('btn-select-all')!.onclick = () => selectAllBatch();
+  document.getElementById('btn-batch-delete')!.onclick = () => batchDelete();
+  document.getElementById('btn-batch-cancel')!.onclick = () =>
+      toggleBatchMode(false);
+  (document.getElementById('search-input') as HTMLInputElement).oninput =
+      (e) => {
+        S.searchQ = (e.target as HTMLInputElement).value.toLowerCase();
+        filterCardsBySearch();
+      };
 
   document.getElementById('sheet-close')!.onclick = closeSheet;
   document.getElementById('scrim')!.onclick = (e) => {
@@ -203,8 +231,10 @@ function wireEntryForm(): void {
     btn.onclick = () => {
       $$('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      (document.getElementById('f-type') as HTMLInputElement).value = btn.dataset.t!;
-      document.getElementById('form-totp-only')!.classList.toggle('hidden', btn.dataset.t === 'password');
+      (document.getElementById('f-type') as HTMLInputElement).value =
+          btn.dataset.t!;
+      document.getElementById('form-totp-only')!.classList.toggle(
+          'hidden', btn.dataset.t === 'password');
     };
   });
 
@@ -213,11 +243,18 @@ function wireEntryForm(): void {
   pwEye.onclick = () => {
     const show = pwInput.type === 'password';
     pwInput.type = show ? 'text' : 'password';
-    pwEye.querySelector('.material-icons-round')!.textContent = show ? 'visibility_off' : 'visibility';
+    pwEye.querySelector('.material-icons-round')!.textContent =
+        show ? 'visibility_off' : 'visibility';
   };
 
   document.getElementById('pw-gen')!.onclick = async () => {
-    const r = await window.vaultxAPI.generator.generate({ length: 20, uppercase: true, lowercase: true, digits: true, symbols: true });
+    const r = await window.vaultxAPI.generator.generate({
+      length: 20,
+      uppercase: true,
+      lowercase: true,
+      digits: true,
+      symbols: true
+    });
     if (r.ok && r.password) {
       pwInput.value = r.password;
       pwInput.type = 'text';
@@ -231,29 +268,39 @@ function wireEntryForm(): void {
    NAVIGATION
 ══════════════════════════════════════════════════════════════ */
 function navigatePage(page: string): void {
+  if (S.batchMode) toggleBatchMode(false);
   S.page = page;
 
-  $$('.snav-item[data-page]').forEach(b =>
-    b.classList.toggle('active', b.dataset.page === page));
+  $$('.snav-item[data-page]')
+      .forEach(b => b.classList.toggle('active', b.dataset.page === page));
   ['accounts', 'groups', 'security', 'settings'].forEach(p => {
     const el = document.getElementById('d-page-' + p);
     if (el) el.classList.toggle('active', p === page);
   });
 
-  const pageNames: Record<string, string> = { accounts: '账户', groups: '分组', security: '安全', settings: '设置' };
+  const pageNames: Record<string, string> =
+      {accounts: '账户', groups: '分组', security: '安全', settings: '设置'};
   document.getElementById('ct-title')!.textContent = pageNames[page] || page;
   document.getElementById('ct-sub')!.textContent = '';
 
   const isAccounts = page === 'accounts';
-  document.getElementById('toolbar-search')!.style.display = isAccounts ? '' : 'none';
-  document.getElementById('btn-view-toggle')!.style.display = isAccounts ? '' : 'none';
-  document.getElementById('btn-import')!.style.display = isAccounts ? '' : 'none';
-  document.getElementById('btn-export')!.style.display = isAccounts ? '' : 'none';
+  document.getElementById('toolbar-search')!.style.display =
+      isAccounts ? '' : 'none';
+  document.getElementById('btn-view-toggle')!.style.display =
+      isAccounts ? '' : 'none';
+  document.getElementById('btn-import')!.style.display =
+      isAccounts ? '' : 'none';
+  document.getElementById('btn-export')!.style.display =
+      isAccounts ? '' : 'none';
 
-  if (isAccounts) renderAccountsPage();
-  else if (page === 'groups') renderGroupsPage();
-  else if (page === 'security') renderSecurityPage();
-  else if (page === 'settings') renderSettingsPage();
+  if (isAccounts)
+    renderAccountsPage();
+  else if (page === 'groups')
+    renderGroupsPage();
+  else if (page === 'security')
+    renderSecurityPage();
+  else if (page === 'settings')
+    renderSettingsPage();
 
   renderSidebarCats();
   renderSidebarStats();
@@ -265,21 +312,33 @@ function navigatePage(page: string): void {
 function renderSidebarCats(): void {
   const el = document.getElementById('sidebar-cats');
   if (!el) return;
-  const allItem = `<button class="scat-item${S.filterCat === 'all' ? ' active' : ''}" data-cat="all">
+  const allItem = `<button class="scat-item${
+      S.filterCat === 'all' ? ' active' : ''}" data-cat="all">
     <span class="scat-dot" style="background:var(--on-surface-v)"></span>
     <span class="scat-name">全部</span>
     <span class="scat-count">${S.entries.length}</span>
   </button>`;
-  el.innerHTML = allItem + S.categories.map(cat => {
-    const count = S.entries.filter(e => normalizeCategory(e.category) === cat.key).length;
-    return `<button class="scat-item${S.filterCat === cat.key ? ' active' : ''}" data-cat="${cat.key}">
+  el.innerHTML = allItem +
+      S.categories
+          .map(cat => {
+            const count =
+                S.entries.filter(e => normalizeCategory(e.category) === cat.key)
+                    .length;
+            return `<button class="scat-item${
+                S.filterCat === cat.key ? ' active' :
+                                          ''}" data-cat="${cat.key}">
       <span class="scat-dot" style="background:${cat.color}"></span>
       <span class="scat-name">${escHtml(cat.label)}</span>
       <span class="scat-count">${count}</span>
     </button>`;
-  }).join('');
+          })
+          .join('');
   el.querySelectorAll<HTMLElement>('.scat-item').forEach(btn => {
-    btn.onclick = () => { S.filterCat = btn.dataset.cat!; renderSidebarCats(); renderAccountsPage(); };
+    btn.onclick = () => {
+      S.filterCat = btn.dataset.cat!;
+      renderSidebarCats();
+      renderAccountsPage();
+    };
   });
 }
 
@@ -296,11 +355,13 @@ function renderSidebarStats(): void {
 ══════════════════════════════════════════════════════════════ */
 function getFilteredEntries(): Entry[] {
   let list = S.entries;
-  if (S.filterCat !== 'all') list = list.filter(e => normalizeCategory(e.category) === S.filterCat);
-  if (S.searchQ) list = list.filter(e =>
-    (e.issuer || '').toLowerCase().includes(S.searchQ) ||
-    (e.label || '').toLowerCase().includes(S.searchQ) ||
-    (e.username || '').toLowerCase().includes(S.searchQ));
+  if (S.filterCat !== 'all')
+    list = list.filter(e => normalizeCategory(e.category) === S.filterCat);
+  if (S.searchQ)
+    list = list.filter(
+        e => (e.issuer || '').toLowerCase().includes(S.searchQ) ||
+            (e.label || '').toLowerCase().includes(S.searchQ) ||
+            (e.username || '').toLowerCase().includes(S.searchQ));
   return list;
 }
 
@@ -334,7 +395,8 @@ function renderAccountsPage(): void {
 
     const sec = document.createElement('div');
     sec.className = 'sec-hd';
-    sec.innerHTML = `<span class="sec-dot" style="background:${cat.color}"></span>
+    sec.innerHTML =
+        `<span class="sec-dot" style="background:${cat.color}"></span>
       <span class="sec-label">${escHtml(cat.label)}</span>
       <span class="sec-line"></span>
       <span class="sec-count">${items.length}</span>`;
@@ -349,8 +411,10 @@ function renderAccountsPage(): void {
   page.innerHTML = '';
   page.appendChild(container);
 
-  if (S.searchQ) filterCardsBySearch();
-  else document.getElementById('ct-sub')!.textContent = `${list.length} 个账户`;
+  if (S.searchQ)
+    filterCardsBySearch();
+  else
+    document.getElementById('ct-sub')!.textContent = `${list.length} 个账户`;
 }
 
 function filterCardsBySearch(): void {
@@ -362,10 +426,9 @@ function filterCardsBySearch(): void {
   page.querySelectorAll<HTMLElement>('.card').forEach(card => {
     const entry = S.entries.find(e => String(e.id) === card.dataset.id);
     if (!entry) return;
-    const match = !q ||
-      (entry.issuer || '').toLowerCase().includes(q) ||
-      (entry.label || '').toLowerCase().includes(q) ||
-      (entry.username || '').toLowerCase().includes(q);
+    const match = !q || (entry.issuer || '').toLowerCase().includes(q) ||
+        (entry.label || '').toLowerCase().includes(q) ||
+        (entry.username || '').toLowerCase().includes(q);
     card.style.display = match ? '' : 'none';
     if (match) visibleCount++;
   });
@@ -373,19 +436,22 @@ function filterCardsBySearch(): void {
   page.querySelectorAll<HTMLElement>('.sec-hd').forEach(sec => {
     const grid = sec.nextElementSibling as HTMLElement | null;
     if (!grid) return;
-    const hasVisible = Array.from(grid.querySelectorAll<HTMLElement>('.card')).some(c => c.style.display !== 'none');
+    const hasVisible = Array.from(grid.querySelectorAll<HTMLElement>('.card'))
+                           .some(c => c.style.display !== 'none');
     sec.style.display = hasVisible ? '' : 'none';
     grid.style.display = hasVisible ? '' : 'none';
   });
 
-  document.getElementById('ct-sub')!.textContent = q ? `${visibleCount} 个匹配` : `${S.entries.length} 个账户`;
+  document.getElementById('ct-sub')!.textContent =
+      q ? `${visibleCount} 个匹配` : `${S.entries.length} 个账户`;
 }
 
 function toggleViewMode(): void {
   S.viewMode = S.viewMode === 'grid' ? 'list' : 'grid';
   localStorage.setItem('viewMode', S.viewMode);
   const icon = document.querySelector('#btn-view-toggle .material-icons-round');
-  if (icon) icon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
+  if (icon)
+    icon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
   if (S.page === 'accounts') renderAccountsPage();
 }
 
@@ -395,14 +461,26 @@ function toggleViewMode(): void {
 function buildCard(entry: Entry): HTMLElement {
   const type = entry.type || 'totp';
   const tplId = type === 'totp' ? 'tpl-card-totp' : 'tpl-card-pw';
-  const frag = (document.getElementById(tplId) as HTMLTemplateElement).content.cloneNode(true) as DocumentFragment;
+  const frag = (document.getElementById(tplId) as HTMLTemplateElement)
+                   .content.cloneNode(true) as DocumentFragment;
   const card = frag.querySelector('.card') as HTMLElement;
 
   card.dataset.id = entry.id;
   card.dataset.cat = normalizeCategory(entry.category);
+
+  const chk = document.createElement('div');
+  chk.className =
+      'card-check' + (S.selectedIds.has(entry.id) ? ' checked' : '');
+  chk.onclick = (e) => {
+    e.stopPropagation();
+    toggleSelect(entry.id, chk);
+  };
+  card.prepend(chk);
+
   card.querySelector('.avatar')!.textContent = entry.icon || '🔐';
-  card.querySelector('.card-issuer')!.textContent = entry.issuer || entry.label || '未知';
-  const label = (entry.label && entry.label !== entry.issuer) ? entry.label : (entry.username || '');
+  card.querySelector('.card-issuer')!.textContent =
+      entry.issuer || entry.label || '未知';
+  const label = entry.label ? entry.label : '';
   card.querySelector('.card-label')!.textContent = label;
 
   const relTime = (ts?: number) => {
@@ -414,11 +492,24 @@ function buildCard(entry: Entry): HTMLElement {
     if (diff < 2_592_000_000) return `${Math.floor(diff / 86_400_000)} 天前`;
     return `${Math.floor(diff / 2_592_000_000)} 个月前`;
   };
-  const fullTime = (ts?: number) => ts ? new Date(ts).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+  const fullTime = (ts?: number) => ts ? new Date(ts).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }) :
+                                         '—';
   const menuBtn = card.querySelector('.menu-btn')!;
   const ts = document.createElement('div');
   ts.className = 'card-ts';
-  ts.innerHTML = `<span class="ts-item" data-tip="创建于 ${fullTime(entry.createdAt)}">创建于 ${relTime(entry.createdAt)}</span><span class="ts-sep">·</span><span class="ts-item" data-tip="修改于 ${fullTime(entry.updatedAt)}">修改于 ${relTime(entry.updatedAt)}</span>`;
+  ts.innerHTML = `<span class="ts-item" data-tip="创建于 ${
+      fullTime(entry.createdAt)}">创建于 ${
+      relTime(
+          entry
+              .createdAt)}</span><span class="ts-sep">·</span><span class="ts-item" data-tip="修改于 ${
+      fullTime(entry.updatedAt)}">修改于 ${relTime(entry.updatedAt)}</span>`;
   menuBtn.before(ts);
 
   buildCardR3(card, entry);
@@ -437,10 +528,13 @@ function buildCardR3(card: HTMLElement, entry: Entry): void {
 
   let html = '';
   if (entry.username) {
-    html += `<span class="r3-section"><span class="cred-label">用户</span><span class="cred-val">${escHtml(entry.username)}</span></span>`;
+    html +=
+        `<span class="r3-section"><span class="cred-label">用户</span><span class="cred-val">${
+            escHtml(entry.username)}</span></span>`;
   }
   if (entry.password) {
-    html += `<span class="r3-divider"></span><span class="r3-section"><span class="cred-label">密码</span>
+    html +=
+        `<span class="r3-divider"></span><span class="r3-section"><span class="cred-label">密码</span>
       <span class="cred-val masked-pw r3-pw">••••••••</span>
       <button class="pw-toggle r3-pw-toggle"><span class="material-icons-round">visibility</span></button>
       <button class="copy-chip r3-pw-copy" style="opacity:1;transform:scale(1)"><span class="material-icons-round">content_copy</span></button></span>`;
@@ -479,8 +573,17 @@ function wireCard(card: HTMLElement, entry: Entry): void {
     closeAllMenus();
     if (!wasOpen) ctxMenu.classList.add('open');
   };
-  (card.querySelector('[data-action="edit"]') as HTMLElement).onclick = (e) => { e.stopPropagation(); closeAllMenus(); openEditSheet(entry); };
-  (card.querySelector('[data-action="delete"]') as HTMLElement).onclick = (e) => { e.stopPropagation(); closeAllMenus(); confirmDelete(entry); };
+  (card.querySelector('[data-action="edit"]') as HTMLElement).onclick = (e) => {
+    e.stopPropagation();
+    closeAllMenus();
+    openEditSheet(entry);
+  };
+  (card.querySelector('[data-action="delete"]') as HTMLElement).onclick =
+      (e) => {
+        e.stopPropagation();
+        closeAllMenus();
+        confirmDelete(entry);
+      };
 
   if (type === 'totp') {
     wireTotpCard(card, entry);
@@ -494,7 +597,10 @@ function wireCard(card: HTMLElement, entry: Entry): void {
 
 function wireTotpCard(card: HTMLElement, entry: Entry): void {
   card.onclick = (e) => {
-    if ((e.target as HTMLElement).closest('.menu-btn,.ctx-menu,.copy-chip,.r3-pw-toggle,.r3-pw-copy')) return;
+    if ((e.target as HTMLElement)
+            .closest(
+                '.menu-btn,.ctx-menu,.copy-chip,.r3-pw-toggle,.r3-pw-copy'))
+      return;
     if (!card.classList.contains('revealed')) revealTOTP(card, entry);
   };
 
@@ -519,7 +625,9 @@ function wirePasswordCard(card: HTMLElement, entry: Entry): void {
       pwVisible = !pwVisible;
       pwDisplay.textContent = pwVisible ? (entry.password || '') : '••••••••';
       pwDisplay.classList.toggle('revealed-pw', pwVisible);
-      (card.querySelector('.card-r2-pw .pw-toggle .material-icons-round') as HTMLElement).textContent = pwVisible ? 'visibility_off' : 'visibility';
+      (card.querySelector('.card-r2-pw .pw-toggle .material-icons-round') as
+       HTMLElement)
+          .textContent = pwVisible ? 'visibility_off' : 'visibility';
       return;
     }
 
@@ -535,7 +643,8 @@ function wirePasswordCard(card: HTMLElement, entry: Entry): void {
         r3Pw.textContent = vis ? '••••••••' : (entry.password || '');
         r3Pw.classList.toggle('masked-pw', vis);
         r3Pw.classList.toggle('revealed-pw', !vis);
-        const icon = card.querySelector('.r3-pw-toggle .material-icons-round') as HTMLElement;
+        const icon = card.querySelector(
+                         '.r3-pw-toggle .material-icons-round') as HTMLElement;
         if (icon) icon.textContent = vis ? 'visibility' : 'visibility_off';
       }
       return;
@@ -570,7 +679,8 @@ function wireR3DblCopy(card: HTMLElement, entry: Entry): void {
       // TOTP section
       el.ondblclick = (e) => {
         e.stopPropagation();
-        const otpText = el.querySelector('.r3-otp')?.textContent?.replace(/\s/g, '');
+        const otpText =
+            el.querySelector('.r3-otp')?.textContent?.replace(/\s/g, '');
         if (otpText && !otpText.includes('•')) copyText(otpText, el);
       };
     }
@@ -589,10 +699,14 @@ function wireR3Password(card: HTMLElement, entry: Entry): void {
     r3PwEl.textContent = visible ? '••••••••' : entry.password!;
     r3PwEl.classList.toggle('masked-pw', visible);
     r3PwEl.classList.toggle('revealed-pw', !visible);
-    (r3PwToggle.querySelector('.material-icons-round') as HTMLElement).textContent = visible ? 'visibility' : 'visibility_off';
+    (r3PwToggle.querySelector('.material-icons-round') as HTMLElement)
+        .textContent = visible ? 'visibility' : 'visibility_off';
   };
 
-  r3PwCopy.onclick = (e) => { e.stopPropagation(); copyText(entry.password!, r3PwCopy); };
+  r3PwCopy.onclick = (e) => {
+    e.stopPropagation();
+    copyText(entry.password!, r3PwCopy);
+  };
 }
 
 function closeAllMenus(): void {
@@ -614,34 +728,44 @@ function revealTOTP(card: HTMLElement, entry: Entry): void {
   if (timerWrap) timerWrap.style.display = '';
 
   async function update(): Promise<void> {
-    const conf: TotpConfig = entry.totp || { secret: entry.secret || '', algorithm: 'SHA1', digits: 6, period: 30 };
+    const conf: TotpConfig = entry.totp ||
+        {secret: entry.secret || '', algorithm: 'SHA1', digits: 6, period: 30};
     try {
       const r: TotpResult = await computeTotp(conf);
       const d = conf.digits || 6;
-      const codeText = d === 6 ? r.code.slice(0, 3) + ' ' + r.code.slice(3) : r.code;
+      const codeText =
+          d === 6 ? r.code.slice(0, 3) + ' ' + r.code.slice(3) : r.code;
       if (otpEl) {
         otpEl.textContent = codeText;
         otpEl.classList.remove('masked', 'warn', 'danger');
-        if (r.remaining <= 5) otpEl.classList.add('danger');
-        else if (r.remaining <= 10) otpEl.classList.add('warn');
+        if (r.remaining <= 5)
+          otpEl.classList.add('danger');
+        else if (r.remaining <= 10)
+          otpEl.classList.add('warn');
       }
       if (r3OtpEl) {
         r3OtpEl.textContent = codeText;
         r3OtpEl.classList.remove('masked', 'warn', 'danger');
-        if (r.remaining <= 5) r3OtpEl.classList.add('danger');
-        else if (r.remaining <= 10) r3OtpEl.classList.add('warn');
+        if (r.remaining <= 5)
+          r3OtpEl.classList.add('danger');
+        else if (r.remaining <= 10)
+          r3OtpEl.classList.add('warn');
       }
       const p = conf.period || 30;
-      const col = r.remaining <= 5 ? 'var(--danger)' : r.remaining <= 10 ? 'var(--warn)' : 'var(--primary)';
+      const col = r.remaining <= 5 ? 'var(--danger)' :
+          r.remaining <= 10        ? 'var(--warn)' :
+                                     'var(--primary)';
       if (ringEl) {
-        ringEl.style.strokeDashoffset = (CIRC * (1 - r.remaining / p)).toFixed(2);
+        ringEl.style.strokeDashoffset =
+            (CIRC * (1 - r.remaining / p)).toFixed(2);
         ringEl.style.stroke = col;
         numEl.style.color = col;
         numEl.textContent = String(r.remaining);
       }
       if (r3RingEl) {
         const r3Circ = 2 * Math.PI * 16;
-        r3RingEl.style.strokeDashoffset = (r3Circ * (1 - r.remaining / p)).toFixed(2);
+        r3RingEl.style.strokeDashoffset =
+            (r3Circ * (1 - r.remaining / p)).toFixed(2);
         r3RingEl.style.stroke = col;
       }
       if (r3NumEl) {
@@ -688,16 +812,21 @@ function closeSheet(): void {
 function buildCatSelect(): void {
   const sel = document.getElementById('f-cat') as HTMLSelectElement | null;
   if (!sel) return;
-  sel.innerHTML = S.categories.map(c => `<option value="${c.key}">${escHtml(c.label)}</option>`).join('');
+  sel.innerHTML =
+      S.categories
+          .map(c => `<option value="${c.key}">${escHtml(c.label)}</option>`)
+          .join('');
 }
 
 function resetSheet(): void {
   document.getElementById('sheet-title')!.textContent = '添加账户';
-  document.getElementById('btn-save-entry')!.innerHTML = '<span class="material-icons-round">add</span>添加账户';
+  document.getElementById('btn-save-entry')!.innerHTML =
+      '<span class="material-icons-round">add</span>添加账户';
   (document.getElementById('f-icon') as HTMLInputElement).value = '🔐';
   $$('.icon-opt').forEach((o, i) => o.classList.toggle('picked', i === 0));
   (document.getElementById('f-type') as HTMLInputElement).value = 'totp';
-  $$('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.t === 'totp'));
+  $$('.type-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.t === 'totp'));
   document.getElementById('form-totp-only')!.classList.remove('hidden');
   (document.getElementById('f-issuer') as HTMLInputElement).value = '';
   (document.getElementById('f-label') as HTMLInputElement).value = '';
@@ -707,51 +836,79 @@ function resetSheet(): void {
   (document.getElementById('f-period') as HTMLSelectElement).value = '30';
   (document.getElementById('f-password') as HTMLInputElement).value = '';
   (document.getElementById('f-password') as HTMLInputElement).type = 'password';
-  document.getElementById('pw-eye')!.querySelector('.material-icons-round')!.textContent = 'visibility';
-  (document.getElementById('f-cat') as HTMLSelectElement).value = S.categories[0]?.key || 'personal';
+  document.getElementById('pw-eye')!.querySelector(
+                                        '.material-icons-round')!.textContent =
+      'visibility';
+  (document.getElementById('f-cat') as HTMLSelectElement).value =
+      S.categories[0]?.key || 'personal';
 }
 
 function populateSheet(entry: Entry): void {
   resetSheet();
   const type = entry.type || 'totp';
   document.getElementById('sheet-title')!.textContent = '编辑账户';
-  document.getElementById('btn-save-entry')!.innerHTML = '<span class="material-icons-round">save</span>保存更改';
-  (document.getElementById('f-icon') as HTMLInputElement).value = entry.icon || '🔐';
-  $$('.icon-opt').forEach(o => o.classList.toggle('picked', o.dataset.icon === entry.icon));
+  document.getElementById('btn-save-entry')!.innerHTML =
+      '<span class="material-icons-round">save</span>保存更改';
+  (document.getElementById('f-icon') as HTMLInputElement).value =
+      entry.icon || '🔐';
+  $$('.icon-opt')
+      .forEach(
+          o => o.classList.toggle('picked', o.dataset.icon === entry.icon));
   (document.getElementById('f-type') as HTMLInputElement).value = type;
-  $$('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.t === type));
-  document.getElementById('form-totp-only')!.classList.toggle('hidden', type === 'password');
-  (document.getElementById('f-issuer') as HTMLInputElement).value = entry.issuer || '';
-  (document.getElementById('f-label') as HTMLInputElement).value = entry.label || '';
-  (document.getElementById('f-username') as HTMLInputElement).value = entry.username || '';
-  (document.getElementById('f-password') as HTMLInputElement).value = entry.password || '';
+  $$('.type-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.t === type));
+  document.getElementById('form-totp-only')!.classList.toggle(
+      'hidden', type === 'password');
+  (document.getElementById('f-issuer') as HTMLInputElement).value =
+      entry.issuer || '';
+  (document.getElementById('f-label') as HTMLInputElement).value =
+      entry.label || '';
+  (document.getElementById('f-username') as HTMLInputElement).value =
+      entry.username || '';
+  (document.getElementById('f-password') as HTMLInputElement).value =
+      entry.password || '';
   if (type === 'totp') {
     const totp = entry.totp || {} as TotpConfig;
-    (document.getElementById('f-secret') as HTMLInputElement).value = totp.secret || entry.secret || '';
-    (document.getElementById('f-algo') as HTMLSelectElement).value = totp.algorithm || 'SHA1';
-    (document.getElementById('f-period') as HTMLSelectElement).value = String(totp.period || 30);
+    (document.getElementById('f-secret') as HTMLInputElement).value =
+        totp.secret || entry.secret || '';
+    (document.getElementById('f-algo') as HTMLSelectElement).value =
+        totp.algorithm || 'SHA1';
+    (document.getElementById('f-period') as HTMLSelectElement).value =
+        String(totp.period || 30);
   }
-  (document.getElementById('f-cat') as HTMLSelectElement).value = normalizeCategory(entry.category);
+  (document.getElementById('f-cat') as HTMLSelectElement).value =
+      normalizeCategory(entry.category);
 }
 
 async function saveEntry(): Promise<void> {
   const isEdit = !!S.editingEntry;
   const existing = S.editingEntry;
   const type = (document.getElementById('f-type') as HTMLInputElement).value;
-  const issuer = (document.getElementById('f-issuer') as HTMLInputElement).value.trim();
-  const secret = (document.getElementById('f-secret') as HTMLInputElement).value.trim();
-  if (!issuer) { showSnack('请填写服务名称'); return; }
-  if (type === 'totp' && !secret) { showSnack('请填写 TOTP 密钥'); return; }
+  const issuer =
+      (document.getElementById('f-issuer') as HTMLInputElement).value.trim();
+  const secret =
+      (document.getElementById('f-secret') as HTMLInputElement).value.trim();
+  if (!issuer) {
+    showSnack('请填写服务名称');
+    return;
+  }
+  if (type === 'totp' && !secret) {
+    showSnack('请填写 TOTP 密钥');
+    return;
+  }
 
-  const pwValue = (document.getElementById('f-password') as HTMLInputElement).value;
+  const pwValue =
+      (document.getElementById('f-password') as HTMLInputElement).value;
   const now = Date.now();
   const entryData: Entry = {
     id: isEdit && existing ? existing.id : crypto.randomUUID(),
     icon: (document.getElementById('f-icon') as HTMLInputElement).value,
     issuer,
     title: issuer,
-    label: (document.getElementById('f-label') as HTMLInputElement).value.trim(),
-    username: (document.getElementById('f-username') as HTMLInputElement).value.trim(),
+    label:
+        (document.getElementById('f-label') as HTMLInputElement).value.trim(),
+    username: (document.getElementById('f-username') as HTMLInputElement)
+                  .value.trim(),
     category: (document.getElementById('f-cat') as HTMLSelectElement).value,
     type: type as 'totp' | 'password',
     createdAt: isEdit && existing ? existing.createdAt : now,
@@ -763,7 +920,8 @@ async function saveEntry(): Promise<void> {
       secret,
       algorithm: (document.getElementById('f-algo') as HTMLSelectElement).value,
       digits: 6,
-      period: parseInt((document.getElementById('f-period') as HTMLSelectElement).value),
+      period: parseInt(
+          (document.getElementById('f-period') as HTMLSelectElement).value),
     };
     entryData.password = pwValue || (existing ? existing.password : '');
   } else {
@@ -786,14 +944,87 @@ async function saveEntry(): Promise<void> {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   BATCH MODE
+══════════════════════════════════════════════════════════════ */
+function toggleBatchMode(on?: boolean): void {
+  S.batchMode = on ?? !S.batchMode;
+  if (!S.batchMode) S.selectedIds.clear();
+  document.getElementById('app')!.classList.toggle('batch-mode', S.batchMode);
+  document.getElementById('batch-bar')!.classList.toggle('show', S.batchMode);
+  document.getElementById('btn-batch')!.classList.toggle('active', S.batchMode);
+  updateBatchCount();
+  renderAccountsPage();
+}
+
+function toggleSelect(id: string, el: HTMLElement): void {
+  if (S.selectedIds.has(id)) {
+    S.selectedIds.delete(id);
+    el.classList.remove('checked');
+  } else {
+    S.selectedIds.add(id);
+    el.classList.add('checked');
+  }
+  updateBatchCount();
+}
+
+function selectAllBatch(): void {
+  const visible = getFilteredEntries();
+  const allSelected = visible.every(e => S.selectedIds.has(e.id));
+  if (allSelected)
+    visible.forEach(e => S.selectedIds.delete(e.id));
+  else
+    visible.forEach(e => S.selectedIds.add(e.id));
+  document.querySelectorAll<HTMLElement>('.card .card-check').forEach(chk => {
+    const id = chk.closest('.card')?.getAttribute('data-id');
+    if (id) chk.classList.toggle('checked', S.selectedIds.has(id));
+  });
+  updateBatchCount();
+}
+
+function updateBatchCount(): void {
+  document.getElementById('batch-count')!.textContent =
+      `已选 ${S.selectedIds.size} 项`;
+}
+
+async function batchDelete(): Promise<void> {
+  const ids = [...S.selectedIds];
+  if (!ids.length) {
+    showSnack('请先选择要删除的账户');
+    return;
+  }
+  const overlay = document.getElementById('confirm-overlay') as HTMLElement;
+  document.getElementById('confirm-title')!.textContent = '批量删除';
+  document.getElementById('confirm-msg')!.textContent =
+      `确定要删除选中的 ${ids.length} 个账户吗？`;
+  overlay.style.display = 'flex';
+  document.getElementById('confirm-cancel')!.onclick = () => {
+    overlay.style.display = 'none';
+  };
+  document.getElementById('confirm-ok')!.onclick = async () => {
+    overlay.style.display = 'none';
+    const r = await window.vaultxAPI.vault.deleteEntries(ids);
+    if (r.ok) {
+      showSnack(`已删除 ${r.count} 个账户`);
+      toggleBatchMode(false);
+      await refreshEntries();
+    } else {
+      showSnack('删除失败: ' + (r.error || ''));
+    }
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
    DELETE
 ══════════════════════════════════════════════════════════════ */
 function confirmDelete(entry: Entry): void {
   const overlay = document.getElementById('confirm-overlay') as HTMLElement;
   document.getElementById('confirm-title')!.textContent = '删除账户';
-  document.getElementById('confirm-msg')!.textContent = `确定要删除"${entry.issuer || entry.label}"吗？`;
+  document.getElementById('confirm-msg')!.textContent =
+      `确定要删除"${entry.issuer || entry.label}"吗？`;
   overlay.style.display = 'flex';
-  document.getElementById('confirm-cancel')!.onclick = () => { overlay.style.display = 'none'; };
+  document.getElementById('confirm-cancel')!.onclick = () => {
+    overlay.style.display = 'none';
+  };
   document.getElementById('confirm-ok')!.onclick = async () => {
     overlay.style.display = 'none';
     await window.vaultxAPI.vault.deleteEntry(entry.id);
@@ -825,83 +1056,168 @@ function renderGroupsPage(): void {
     if (diff < 2_592_000_000) return `${Math.floor(diff / 86_400_000)} 天前`;
     return `${Math.floor(diff / 2_592_000_000)} 个月前`;
   };
-  const fullTime = (ts?: number) => ts ? new Date(ts).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+  const fullTime = (ts?: number) => ts ? new Date(ts).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }) :
+                                         '—';
   const cats = S.categories;
-  page.innerHTML = '<div class="d-group-grid">' + cats.map(g => {
-    const count = S.entries.filter(e => normalizeCategory(e.category) === g.key).length;
-    return `<div class="d-group-card">
+  page.innerHTML = '<div class="d-group-grid">' +
+      cats.map(g => {
+            const count =
+                S.entries.filter(e => normalizeCategory(e.category) === g.key)
+                    .length;
+            return `<div class="d-group-card">
       <div class="d-group-card-top">
-        <div class="d-group-icon" style="background:${g.color}"><span class="material-icons-round">${g.icon}</span></div>
-        <div style="flex:1;min-width:0"><div class="d-group-name">${escHtml(g.label)}</div><div class="d-group-key">${escHtml(g.key)}</div></div>
-        <div class="card-ts"><span class="ts-item" data-tip="创建于 ${fullTime(g.createdAt)}">创建于 ${relTime(g.createdAt)}</span><span class="ts-sep">·</span><span class="ts-item" data-tip="修改于 ${fullTime(g.updatedAt)}">修改于 ${relTime(g.updatedAt)}</span></div>
+        <div class="d-group-icon" style="background:${
+                g.color}"><span class="material-icons-round">${
+                g.icon}</span></div>
+        <div style="flex:1;min-width:0"><div class="d-group-name">${
+                escHtml(g.label)}</div><div class="d-group-key">${
+                escHtml(g.key)}</div></div>
+        <div class="card-ts"><span class="ts-item" data-tip="创建于 ${
+                fullTime(g.createdAt)}">创建于 ${
+                relTime(
+                    g.createdAt)}</span><span class="ts-sep">·</span><span class="ts-item" data-tip="修改于 ${
+                fullTime(
+                    g.updatedAt)}">修改于 ${relTime(g.updatedAt)}</span></div>
       </div>
-      <div class="d-group-stats"><span class="d-group-stat">${count} 个账户</span></div>
+      <div class="d-group-stats"><span class="d-group-stat">${
+                count} 个账户</span></div>
       <div class="d-group-actions">
-        <button class="d-group-btn" data-g="${g.key}"><span class="material-icons-round">visibility</span>查看</button>
-        <button class="d-group-btn d-group-edit" data-g="${g.key}"><span class="material-icons-round">edit</span>编辑</button>
-        <button class="d-group-btn d-group-del" data-g="${g.key}"><span class="material-icons-round">delete</span>删除</button>
+        <button class="d-group-btn" data-g="${
+                g.key}"><span class="material-icons-round">visibility</span>查看</button>
+        <button class="d-group-btn d-group-edit" data-g="${
+                g.key}"><span class="material-icons-round">edit</span>编辑</button>
+        <button class="d-group-btn d-group-del" data-g="${
+                g.key}"><span class="material-icons-round">delete</span>删除</button>
       </div>
     </div>`;
-  }).join('') + `<div class="d-group-card d-group-add" id="btn-add-cat">
+          })
+          .join('') +
+      `<div class="d-group-card d-group-add" id="btn-add-cat">
       <div class="d-group-card-top">
         <div class="d-group-icon" style="background:var(--on-surface-v)"><span class="material-icons-round">add</span></div>
         <div><div class="d-group-name">添加分组</div></div>
       </div>
     </div></div>`;
 
-  page.querySelectorAll<HTMLElement>('.d-group-btn:not(.d-group-edit):not(.d-group-del)').forEach(b => {
-    b.onclick = () => { S.filterCat = b.dataset.g!; navigatePage('accounts'); };
-  });
+  page.querySelectorAll<HTMLElement>(
+          '.d-group-btn:not(.d-group-edit):not(.d-group-del)')
+      .forEach(b => {
+        b.onclick = () => {
+          S.filterCat = b.dataset.g!;
+          navigatePage('accounts');
+        };
+      });
   page.querySelectorAll<HTMLElement>('.d-group-edit').forEach(b => {
     b.onclick = () => openCatSheet(b.dataset.g!);
   });
   page.querySelectorAll<HTMLElement>('.d-group-del').forEach(b => {
     b.onclick = () => deleteCategory(b.dataset.g!);
   });
-  document.getElementById('btn-add-cat')?.addEventListener('click', () => openCatSheet());
+  document.getElementById('btn-add-cat')
+      ?.addEventListener('click', () => openCatSheet());
 }
 
-const CAT_ICONS = ['work', 'account_balance', 'person', 'school', 'shopping_cart', 'local_hospital', 'flight', 'code', 'sports_esports', 'music_note', 'restaurant', 'pets'];
-const CAT_COLORS_PRESET = ['#4CAF50', '#FF9800', '#2196F3', '#9C27B0', '#F44336', '#00BCD4', '#795548', '#607D8B', '#E91E63', '#3F51B5', '#009688', '#FFC107'];
+const CAT_ICONS = [
+  'work', 'account_balance', 'person', 'school', 'shopping_cart',
+  'local_hospital', 'flight', 'code', 'sports_esports', 'music_note',
+  'restaurant', 'pets'
+];
+const CAT_COLORS_PRESET = [
+  '#4CAF50', '#FF9800', '#2196F3', '#9C27B0', '#F44336', '#00BCD4', '#795548',
+  '#607D8B', '#E91E63', '#3F51B5', '#009688', '#FFC107'
+];
 
 function openCatSheet(editKey?: string): void {
   const existing = editKey ? S.categories.find(c => c.key === editKey) : null;
-  document.getElementById('sheet-title')!.textContent = existing ? '编辑分组' : '添加分组';
+  document.getElementById('sheet-title')!.textContent =
+      existing ? '编辑分组' : '添加分组';
   const form = document.getElementById('sheet-form')!;
   form.innerHTML = `
-    <div class="field"><input type="text" id="cat-label" placeholder=" " value="${existing ? escHtml(existing.label) : ''}"><label>名称</label></div>
-    <div class="field"><input type="text" id="cat-key" placeholder=" " value="${existing ? escHtml(existing.key) : ''}" ${existing ? 'readonly' : ''}><label>标识</label></div>
+    <div class="field"><input type="text" id="cat-label" placeholder=" " value="${
+      existing ? escHtml(existing.label) : ''}"><label>名称</label></div>
+    <div class="field"><input type="text" id="cat-key" placeholder=" " value="${
+      existing ? escHtml(existing.key) :
+                 ''}" ${existing ? 'readonly' : ''}><label>标识</label></div>
     <div class="form-label-sm">图标</div>
-    <div class="icon-picker-row">${CAT_ICONS.map(ic =>
-      `<button class="icon-opt${existing?.icon === ic ? ' picked' : ''}" data-icon="${ic}"><span class="material-icons-round">${ic}</span></button>`
-    ).join('')}</div>
+    <div class="icon-picker-row">${
+      CAT_ICONS
+          .map(
+              ic => `<button class="icon-opt${
+                  existing?.icon === ic ? ' picked' : ''}" data-icon="${
+                  ic}"><span class="material-icons-round">${
+                  ic}</span></button>`)
+          .join('')}</div>
     <div class="form-label-sm">颜色</div>
-    <div class="icon-picker-row">${CAT_COLORS_PRESET.map(c =>
-      `<button class="color-opt${existing?.color === c ? ' picked' : ''}" data-color="${c}" style="background:${c}"></button>`
-    ).join('')}</div>
-    <button class="btn-fill" id="btn-save-cat"><span class="material-icons-round">${existing ? 'save' : 'add'}</span>${existing ? '保存' : '添加'}</button>`;
+    <div class="icon-picker-row">${
+      CAT_COLORS_PRESET
+          .map(
+              c => `<button class="color-opt${
+                  existing?.color === c ?
+                      ' picked' :
+                      ''}" data-color="${c}" style="background:${c}"></button>`)
+          .join('')}</div>
+    <button class="btn-fill" id="btn-save-cat"><span class="material-icons-round">${
+      existing ? 'save' : 'add'}</span>${existing ? '保存' : '添加'}</button>`;
 
   form.querySelectorAll<HTMLElement>('.icon-opt').forEach(btn => {
-    btn.onclick = () => { form.querySelectorAll('.icon-opt').forEach(b => b.classList.remove('picked')); btn.classList.add('picked'); };
+    btn.onclick = () => {
+      form.querySelectorAll('.icon-opt')
+          .forEach(b => b.classList.remove('picked'));
+      btn.classList.add('picked');
+    };
   });
   form.querySelectorAll<HTMLElement>('.color-opt').forEach(btn => {
-    btn.onclick = () => { form.querySelectorAll('.color-opt').forEach(b => b.classList.remove('picked')); btn.classList.add('picked'); };
+    btn.onclick = () => {
+      form.querySelectorAll('.color-opt')
+          .forEach(b => b.classList.remove('picked'));
+      btn.classList.add('picked');
+    };
   });
 
   document.getElementById('btn-save-cat')!.onclick = async () => {
-    const label = (document.getElementById('cat-label') as HTMLInputElement).value.trim();
-    const key = (document.getElementById('cat-key') as HTMLInputElement).value.trim().toLowerCase();
-    const icon = form.querySelector('.icon-opt.picked')?.getAttribute('data-icon') || 'label';
-    const color = form.querySelector('.color-opt.picked')?.getAttribute('data-color') || '#607D8B';
-    if (!label || !key) { showSnack('请填写名称和标识'); return; }
-    if (!/^[a-z][a-z0-9_]*$/.test(key)) { showSnack('标识只能包含小写字母、数字和下划线'); return; }
+    const label =
+        (document.getElementById('cat-label') as HTMLInputElement).value.trim();
+    const key = (document.getElementById('cat-key') as HTMLInputElement)
+                    .value.trim()
+                    .toLowerCase();
+    const icon =
+        form.querySelector('.icon-opt.picked')?.getAttribute('data-icon') ||
+        'label';
+    const color =
+        form.querySelector('.color-opt.picked')?.getAttribute('data-color') ||
+        '#607D8B';
+    if (!label || !key) {
+      showSnack('请填写名称和标识');
+      return;
+    }
+    if (!/^[a-z][a-z0-9_]*$/.test(key)) {
+      showSnack('标识只能包含小写字母、数字和下划线');
+      return;
+    }
     const now = Date.now();
-    const cat: Category = { key, label, icon, color, createdAt: existing?.createdAt ?? now, updatedAt: now };
+    const cat: Category = {
+      key,
+      label,
+      icon,
+      color,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now
+    };
     try {
       if (existing) {
         await window.vaultxAPI.vault.updateCategory(cat);
       } else {
-        if (S.categories.some(c => c.key === key)) { showSnack('标识已存在'); return; }
+        if (S.categories.some(c => c.key === key)) {
+          showSnack('标识已存在');
+          return;
+        }
         await window.vaultxAPI.vault.addCategory(cat);
       }
       const res = await window.vaultxAPI.vault.getCategories();
@@ -918,8 +1234,12 @@ function openCatSheet(editKey?: string): void {
 }
 
 async function deleteCategory(key: string): Promise<void> {
-  const count = S.entries.filter(e => normalizeCategory(e.category) === key).length;
-  if (count > 0) { showSnack(`该分组下有 ${count} 个账户，无法删除`); return; }
+  const count =
+      S.entries.filter(e => normalizeCategory(e.category) === key).length;
+  if (count > 0) {
+    showSnack(`该分组下有 ${count} 个账户，无法删除`);
+    return;
+  }
   try {
     await window.vaultxAPI.vault.deleteCategory(key);
     const res = await window.vaultxAPI.vault.getCategories();
@@ -947,11 +1267,13 @@ function renderSecurityPage(): void {
       </div>
       <div class="s-item no-tap">
         <div class="s-icon" style="background:var(--primary)"><span class="material-icons-round">storage</span></div>
-        <div class="s-body"><div class="s-label">金库路径</div><div class="s-sub" style="word-break:break-all">${escHtml(S.vaultPath || '未知')}</div></div>
+        <div class="s-body"><div class="s-label">金库路径</div><div class="s-sub" style="word-break:break-all">${
+      escHtml(S.vaultPath || '未知')}</div></div>
       </div>
       <div class="s-item no-tap">
         <div class="s-icon" style="background:var(--warn)"><span class="material-icons-round">numbers</span></div>
-        <div class="s-body"><div class="s-label">账户数量</div><div class="s-sub">${S.entries.length} 个账户</div></div>
+        <div class="s-body"><div class="s-label">账户数量</div><div class="s-sub">${
+      S.entries.length} 个账户</div></div>
       </div>
     </div>
     <div class="settings-card">
@@ -972,27 +1294,50 @@ function renderSettingsPage(): void {
   const page = document.getElementById('d-page-settings');
   if (!page) return;
   const cur = getAppEl().dataset.theme || 'c';
-  const swatches = THEME_META.map(tm =>
-    `<button class="th-btn${tm.t === cur ? ' active' : ''}" data-t="${tm.t}">
-      <div class="th-swatch"><div class="th-half" style="background:${tm.c1}"></div><div class="th-half" style="background:${tm.c2}"></div></div>
+  const swatches =
+      THEME_META
+          .map(
+              tm => `<button class="th-btn${
+                  tm.t === cur ? ' active' : ''}" data-t="${tm.t}">
+      <div class="th-swatch"><div class="th-half" style="background:${
+                  tm.c1}"></div><div class="th-half" style="background:${
+                  tm.c2}"></div></div>
       <span class="th-name">${tm.name}</span>
-    </button>`).join('');
+    </button>`)
+          .join('');
 
   page.innerHTML = `<div class="settings-wrap">
     <div class="settings-card">
       <div class="settings-card-hd">主题</div>
-      <div class="s-item no-tap" style="flex-wrap:wrap;gap:8px;padding:14px 18px;">${swatches}</div>
+      <div class="s-item no-tap" style="flex-wrap:wrap;gap:8px;padding:14px 18px;">${
+      swatches}</div>
     </div>
     <div class="settings-row-grid">
       <div class="settings-card">
         <div class="settings-card-hd">安全</div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">自动锁定</div><div class="s-sub">闲置后自动锁定</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-lock">${[1, 5, 10, 30, 60, 0].map(m => `<option value="${m * 60}"${S.settings.autoLockTimeout === (m * 60) ? ' selected' : ''}>${m === 0 ? '从不' : m < 60 ? m + '分钟' : '1小时'}</option>`).join('')}</select></div>
+          <div class="s-ctrl"><select class="s-select" id="st-lock">${
+          [1, 5, 10, 30, 60, 0]
+              .map(
+                  m => `<option value="${m * 60}"${
+                      S.settings.autoLockTimeout === (m * 60) ? ' selected' :
+                                                                ''}>${
+                      m === 0    ? '从不' :
+                          m < 60 ? m + '分钟' :
+                                   '1小时'}</option>`)
+              .join('')}</select></div>
         </div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">剪贴板清除</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-clip">${[15, 30, 60, 120].map(s => `<option value="${s}"${S.settings.clipboardClearSeconds === s ? ' selected' : ''}>${s}秒</option>`).join('')}</select></div>
+          <div class="s-ctrl"><select class="s-select" id="st-clip">${
+          [15, 30, 60, 120]
+              .map(
+                  s => `<option value="${s}"${
+                      S.settings.clipboardClearSeconds === s ?
+                          ' selected' :
+                          ''}>${s}秒</option>`)
+              .join('')}</select></div>
         </div>
       </div>
       <div class="settings-card">
@@ -1018,11 +1363,23 @@ function renderSettingsPage(): void {
     </div>
   </div>`;
 
-  page.querySelectorAll<HTMLElement>('.th-btn').forEach(b => { b.onclick = () => setTheme(b.dataset.t!); });
-  (page.querySelector('#st-lock') as HTMLSelectElement).onchange = (e) => { S.settings.autoLockTimeout = parseInt((e.target as HTMLSelectElement).value); saveSettings(); };
-  (page.querySelector('#st-clip') as HTMLSelectElement).onchange = (e) => { S.settings.clipboardClearSeconds = parseInt((e.target as HTMLSelectElement).value); saveSettings(); };
-  (page.querySelector('#st-import') as HTMLElement).onclick = () => importVault();
-  (page.querySelector('#st-export') as HTMLElement).onclick = () => exportVault();
+  page.querySelectorAll<HTMLElement>('.th-btn').forEach(b => {
+    b.onclick = () => setTheme(b.dataset.t!);
+  });
+  (page.querySelector('#st-lock') as HTMLSelectElement).onchange = (e) => {
+    S.settings.autoLockTimeout =
+        parseInt((e.target as HTMLSelectElement).value);
+    saveSettings();
+  };
+  (page.querySelector('#st-clip') as HTMLSelectElement).onchange = (e) => {
+    S.settings.clipboardClearSeconds =
+        parseInt((e.target as HTMLSelectElement).value);
+    saveSettings();
+  };
+  (page.querySelector('#st-import') as HTMLElement).onclick = () =>
+      importVault();
+  (page.querySelector('#st-export') as HTMLElement).onclick = () =>
+      exportVault();
 }
 
 async function saveSettings(): Promise<void> {
@@ -1034,8 +1391,59 @@ async function saveSettings(): Promise<void> {
    IMPORT / EXPORT
 ══════════════════════════════════════════════════════════════ */
 async function importVault(): Promise<void> {
-  const path = await window.vaultxAPI.dialog.openFile();
-  if (path) showSnack('导入功能待实现');
+  const path = await window.vaultxAPI.dialog.openImportXml();
+  if (!path) return;
+  try {
+    const file = await window.vaultxAPI.readFile(path);
+    if (!file.ok || !file.content) {
+      showSnack('读取文件失败: ' + (file.error || ''));
+      return;
+    }
+
+    // Create categories for unmatched KeePass groups
+    const catOptions = S.categories.map(c => ({key: c.key, label: c.label}));
+    const unmatched = collectUnmatchedGroups(file.content, catOptions);
+    const existingKeys = new Set(S.categories.map(c => c.key));
+    let catIdx = S.categories.length;
+    for (const name of unmatched) {
+      let key =
+          name.toLowerCase().replace(/[^a-z0-9一-鿿]/g, '').slice(0, 20) ||
+          'cat' + catIdx;
+      if (existingKeys.has(key)) key += catIdx;
+      existingKeys.add(key);
+      await window.vaultxAPI.vault.addCategory({
+        key,
+        label: name,
+        icon: CAT_ICONS[catIdx % CAT_ICONS.length],
+        color: CAT_COLORS_PRESET[catIdx % CAT_COLORS_PRESET.length],
+      });
+      catIdx++;
+    }
+    if (unmatched.length) {
+      const gc = await window.vaultxAPI.vault.getCategories();
+      if (gc.ok && gc.categories?.length) S.categories = gc.categories;
+    }
+
+    const entries = parseKeePassXml(
+        file.content, S.categories.map(c => ({key: c.key, label: c.label})));
+    if (!entries.length) {
+      showSnack('未找到任何账户');
+      return;
+    }
+    const r = await window.vaultxAPI.vault.importEntries(entries);
+    if (r.ok) {
+      const ge = await window.vaultxAPI.vault.getEntries();
+      S.entries = ge.ok ? (ge.entries as Entry[]) : [];
+      renderSidebarCats();
+      renderSidebarStats();
+      renderAccountsPage();
+      showSnack(`已导入 ${r.count} 个账户`);
+    } else {
+      showSnack('导入失败: ' + (r.error || ''));
+    }
+  } catch (e: any) {
+    showSnack('导入失败: ' + (e.message || e));
+  }
 }
 
 async function exportVault(): Promise<void> {
@@ -1055,9 +1463,15 @@ async function lockVault(): Promise<void> {
 }
 
 async function initVault(): Promise<void> {
-  if (!S.vaultPath) { renderCreateVault(); return; }
+  if (!S.vaultPath) {
+    renderCreateVault();
+    return;
+  }
   const status = await window.vaultxAPI.vault.check(S.vaultPath);
-  if (!status.ok || !status.exists) { renderCreateVault(); return; }
+  if (!status.ok || !status.exists) {
+    renderCreateVault();
+    return;
+  }
   renderLock();
 }
 
@@ -1086,7 +1500,8 @@ function renderLock(): void {
       <button class="lock-btn" id="lock-submit">解锁</button>
       <div class="lock-vault-row">
         <span class="material-icons-round">storage</span>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(S.vaultPath || '未知路径')}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${
+      escHtml(S.vaultPath || '未知路径')}</span>
         <button class="lock-link" id="lock-change">切换</button>
       </div>
     </div>`;
@@ -1100,14 +1515,21 @@ function renderLock(): void {
   eyeBtn.onclick = () => {
     const show = pwInput.type === 'password';
     pwInput.type = show ? 'text' : 'password';
-    eyeBtn.querySelector('.material-icons-round')!.textContent = show ? 'visibility_off' : 'visibility';
+    eyeBtn.querySelector('.material-icons-round')!.textContent =
+        show ? 'visibility_off' : 'visibility';
   };
 
-  pwInput.onkeydown = (e) => { if (e.key === 'Enter') submitBtn.click(); };
+  pwInput.onkeydown = (e) => {
+    if (e.key === 'Enter') submitBtn.click();
+  };
 
   submitBtn.onclick = async () => {
     const pw = pwInput.value;
-    if (!pw) { errEl.textContent = '请输入密码'; errEl.classList.add('show'); return; }
+    if (!pw) {
+      errEl.textContent = '请输入密码';
+      errEl.classList.add('show');
+      return;
+    }
     submitBtn.disabled = true;
     submitBtn.textContent = '解锁中…';
     try {
@@ -1128,7 +1550,8 @@ function renderLock(): void {
           window.vaultxAPI.vault.getCategories(),
         ]);
         S.entries = ge.ok ? (ge.entries as Entry[]) : [];
-        S.categories = gc.ok && gc.categories?.length ? gc.categories : [...DEFAULT_CATEGORIES];
+        S.categories = gc.ok && gc.categories?.length ? gc.categories :
+                                                        [...DEFAULT_CATEGORIES];
         buildCatSelect();
         renderSidebarCats();
         renderSidebarStats();
@@ -1149,7 +1572,8 @@ function renderLock(): void {
     }
   };
 
-  (lockOv.querySelector('#lock-change') as HTMLElement).onclick = () => changeVault();
+  (lockOv.querySelector('#lock-change') as HTMLElement).onclick = () =>
+      changeVault();
   setTimeout(() => pwInput.focus(), 100);
 }
 
@@ -1184,10 +1608,12 @@ function renderCreateVault(): void {
   eye.onclick = () => {
     const s = pw1.type === 'password';
     pw1.type = s ? 'text' : 'password';
-    eye.querySelector('.material-icons-round')!.textContent = s ? 'visibility_off' : 'visibility';
+    eye.querySelector('.material-icons-round')!.textContent =
+        s ? 'visibility_off' : 'visibility';
   };
 
-  (lockOv.querySelector('#create-choose') as HTMLElement).onclick = async () => {
+  (lockOv.querySelector('#create-choose') as HTMLElement).onclick =
+      async () => {
     const path = await window.vaultxAPI.dialog.saveFile();
     if (path) {
       S.vaultPath = path;
@@ -1196,14 +1622,31 @@ function renderCreateVault(): void {
     }
   };
 
-  (lockOv.querySelector('#create-submit') as HTMLElement).onclick = async () => {
+  (lockOv.querySelector('#create-submit') as HTMLElement).onclick =
+      async () => {
     const p1 = pw1.value, p2 = pw2.value;
-    if (!p1) { errEl.textContent = '请输入密码'; errEl.classList.add('show'); return; }
-    if (p1 !== p2) { errEl.textContent = '两次密码不一致'; errEl.classList.add('show'); return; }
-    if (p1.length < 8) { errEl.textContent = '密码至少 8 位'; errEl.classList.add('show'); return; }
+    if (!p1) {
+      errEl.textContent = '请输入密码';
+      errEl.classList.add('show');
+      return;
+    }
+    if (p1 !== p2) {
+      errEl.textContent = '两次密码不一致';
+      errEl.classList.add('show');
+      return;
+    }
+    if (p1.length < 8) {
+      errEl.textContent = '密码至少 8 位';
+      errEl.classList.add('show');
+      return;
+    }
     const path = S.vaultPath || (Date.now() + '.vaultx');
     const r = await window.vaultxAPI.vault.create(path, p1);
-    if (!r.ok) { errEl.textContent = '创建失败: ' + (r.error || '未知错误'); errEl.classList.add('show'); return; }
+    if (!r.ok) {
+      errEl.textContent = '创建失败: ' + (r.error || '未知错误');
+      errEl.classList.add('show');
+      return;
+    }
     S.vaultPath = path;
     localStorage.setItem('vaultPath', path);
     lockOv.classList.remove('show');
@@ -1228,7 +1671,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   entryFormHTML = document.getElementById('sheet-form')!.innerHTML;
   await window.vaultxAPI.settings.update(S.settings);
   // Restore view toggle icon
-  const viewIcon = document.querySelector('#btn-view-toggle .material-icons-round');
-  if (viewIcon) viewIcon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
+  const viewIcon =
+      document.querySelector('#btn-view-toggle .material-icons-round');
+  if (viewIcon)
+    viewIcon.textContent = S.viewMode === 'grid' ? 'grid_view' : 'view_list';
   await initVault();
 });
