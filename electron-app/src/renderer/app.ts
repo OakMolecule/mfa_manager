@@ -768,7 +768,7 @@ function startRevealTimer(card: HTMLElement, id: string): void {
       el.classList.remove('revealed-pw');
       el.textContent = '••••••••';
     });
-    card.querySelectorAll('.cred-val').forEach(el => {
+    card.querySelectorAll('.cred-val.r3-pw').forEach(el => {
       el.classList.add('masked-pw');
       el.classList.remove('revealed-pw');
     });
