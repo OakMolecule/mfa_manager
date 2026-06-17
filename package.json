@@ -31,7 +31,7 @@
     "appId": "com.vaultx.app",
     "productName": "VaultX",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "linux": {
       "target": "AppImage"

@@ -47,13 +47,13 @@ jobs:
         with:
           name: VaultX-${{ matrix.platform }}
           path: |
-            dist/*.AppImage
-            dist/*.dmg
-            dist/*.exe
-            dist/*.msi
-            dist/*.snap
-            dist/*.deb
-            dist/*.rpm
+            release/*.AppImage
+            release/*.dmg
+            release/*.exe
+            release/*.msi
+            release/*.snap
+            release/*.deb
+            release/*.rpm
           if-no-files-found: ignore
           retention-days: 14
 
