@@ -19,10 +19,10 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 720,
-    minWidth: 800,
-    minHeight: 550,
+    minWidth: 1100,
+    minHeight: 720,
     backgroundColor: '#FAFAFA',
-    titleBarStyle: 'default',
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -333,6 +333,24 @@ ipcMain.handle('vault:exportJson', async (_event, filePath: string) => {
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e.message };
+  }
+});
+
+// ── IPC: 窗口控制 ──────────────────────────────────────────────────────
+
+ipcMain.on('window:close', () => {
+  mainWindow?.close();
+});
+
+ipcMain.on('window:minimize', () => {
+  mainWindow?.minimize();
+});
+
+ipcMain.on('window:maximize', () => {
+  if (mainWindow?.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow?.maximize();
   }
 });
 

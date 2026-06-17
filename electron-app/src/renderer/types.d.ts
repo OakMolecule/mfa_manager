@@ -86,6 +86,12 @@ interface DevToolsApi {
   toggle(): Promise<{ ok: boolean; isOpen?: boolean }>;
 }
 
+interface WindowControlApi {
+  close(): void;
+  minimize(): void;
+  maximize(): void;
+}
+
 interface VaultXAPI {
   vault: VaultApi;
   dialog: DialogApi;
@@ -93,6 +99,7 @@ interface VaultXAPI {
   generator: GeneratorApi;
   theme: ThemeApi;
   settings: SettingsApi;
+  window: WindowControlApi;
   devtools: DevToolsApi;
   onVaultLocked(cb: () => void): void;
   readFile(filePath: string): Promise<{ ok: boolean; content?: string; error?: string }>;

@@ -187,6 +187,14 @@ window.vaultxAPI.onVaultLocked(() => {
    WIRE SHELL
 ══════════════════════════════════════════════════════════════ */
 function wireShell(): void {
+  // Traffic light buttons
+  const tR = document.querySelector('.t-r') as HTMLElement;
+  const tY = document.querySelector('.t-y') as HTMLElement;
+  const tG = document.querySelector('.t-g') as HTMLElement;
+  if (tR) tR.onclick = () => window.vaultxAPI.window.close();
+  if (tY) tY.onclick = () => window.vaultxAPI.window.minimize();
+  if (tG) tG.onclick = () => window.vaultxAPI.window.maximize();
+
   $$('.snav-item[data-page]').forEach(btn => {
     btn.onclick = () => navigatePage(btn.dataset.page!);
   });
@@ -1590,6 +1598,7 @@ function renderLock(): void {
   const lockOv = document.getElementById('lock-ov') as HTMLElement;
   if (!lockOv) return;
   lockOv.innerHTML = `
+    <div class="lock-traffic"><span class="t-r"></span><span class="t-y"></span><span class="t-g"></span></div>
     <div class="lock-logo"><span class="material-icons-round">shield</span></div>
     <div class="lock-h">VaultX</div>
     <div class="lock-sub">请输入主密码解锁金库</div>
@@ -1679,6 +1688,15 @@ function renderLock(): void {
       changeVault();
   (lockOv.querySelector('#lock-create') as HTMLElement).onclick = () =>
       renderCreateVault();
+
+  // Traffic light buttons on lock screen
+  const lockTR = lockOv.querySelector('.t-r') as HTMLElement;
+  const lockTY = lockOv.querySelector('.t-y') as HTMLElement;
+  const lockTG = lockOv.querySelector('.t-g') as HTMLElement;
+  if (lockTR) lockTR.onclick = () => window.vaultxAPI.window.close();
+  if (lockTY) lockTY.onclick = () => window.vaultxAPI.window.minimize();
+  if (lockTG) lockTG.onclick = () => window.vaultxAPI.window.maximize();
+
   setTimeout(() => pwInput.focus(), 100);
 }
 
