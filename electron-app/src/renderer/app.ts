@@ -259,13 +259,26 @@ function wireEntryForm(): void {
         show ? 'visibility_off' : 'visibility';
   };
 
-  document.getElementById('pw-gen')!.onclick = async () => {
+  // Password generator panel
+  const genPanel = document.getElementById('pw-gen-panel')!;
+  const genLength = document.getElementById('pw-gen-length') as HTMLInputElement;
+  const genLengthVal = document.getElementById('pw-gen-length-val')!;
+
+  document.getElementById('pw-gen')!.onclick = () => {
+    genPanel.style.display = genPanel.style.display === 'none' ? '' : 'none';
+  };
+
+  genLength.oninput = () => {
+    genLengthVal.textContent = genLength.value;
+  };
+
+  document.getElementById('pw-gen-confirm')!.onclick = async () => {
     const r = await window.vaultxAPI.generator.generate({
-      length: 20,
-      uppercase: true,
-      lowercase: true,
-      digits: true,
-      symbols: true
+      length: parseInt(genLength.value),
+      uppercase: (document.getElementById('pw-gen-upper') as HTMLInputElement).checked,
+      lowercase: (document.getElementById('pw-gen-lower') as HTMLInputElement).checked,
+      digits: (document.getElementById('pw-gen-digits') as HTMLInputElement).checked,
+      symbols: (document.getElementById('pw-gen-symbols') as HTMLInputElement).checked
     });
     if (r.ok && r.password) {
       pwInput.value = r.password;

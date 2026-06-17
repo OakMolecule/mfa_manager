@@ -574,6 +574,25 @@ body {
 .pw-act:hover{background:rgba(128,128,128,.12);}
 .pw-act .material-icons-round{font-size:18px;}
 
+/* Password Generator Panel */
+.pw-gen-panel{
+  background:var(--surface3);border-radius:12px;padding:14px;
+  border:1px solid var(--outline2);margin-top:-4px;
+}
+.pw-gen-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.pw-gen-row:last-of-type{margin-bottom:0;}
+.pw-gen-row label{font-size:13px;color:var(--on-surface-v);display:flex;align-items:center;gap:4px;cursor:pointer;}
+.pw-gen-row input[type="checkbox"]{accent-color:var(--primary);}
+.pw-gen-row input[type="range"]{flex:1;accent-color:var(--primary);}
+.pw-gen-row span{font-size:14px;font-weight:600;color:var(--on-surface);min-width:28px;text-align:right;}
+.pw-gen-btn{
+  width:100%;height:36px;border:none;border-radius:8px;
+  background:var(--primary);color:var(--on-primary);
+  font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+  transition:opacity .2s;margin-top:6px;
+}
+.pw-gen-btn:hover{opacity:.9;}
+
 .type-toggle{
   display:flex;background:var(--surface3);border-radius:10px;
   padding:3px;border:1px solid var(--outline2);

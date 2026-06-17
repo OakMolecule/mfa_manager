@@ -107,6 +107,21 @@
               <button type="button" class="pw-act" id="pw-gen" title="生成密码"><span class="material-icons-round">autorenew</span></button>
             </div>
           </div>
+          <!-- Password Generator Settings -->
+          <div class="pw-gen-panel" id="pw-gen-panel" style="display:none">
+            <div class="pw-gen-row">
+              <label>长度</label>
+              <input type="range" id="pw-gen-length" min="8" max="64" value="20">
+              <span id="pw-gen-length-val">20</span>
+            </div>
+            <div class="pw-gen-row">
+              <label><input type="checkbox" id="pw-gen-upper" checked> 大写字母</label>
+              <label><input type="checkbox" id="pw-gen-lower" checked> 小写字母</label>
+              <label><input type="checkbox" id="pw-gen-digits" checked> 数字</label>
+              <label><input type="checkbox" id="pw-gen-symbols" checked> 符号</label>
+            </div>
+            <button type="button" class="pw-gen-btn" id="pw-gen-confirm">生成密码</button>
+          </div>
           <div class="field">
             <select id="f-cat"></select>
           </div>
