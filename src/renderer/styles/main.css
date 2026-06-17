@@ -768,13 +768,19 @@ body {
 .toggle-sw.on::after{transform:translateX(18px);}
 
 .s-select{
-  height:28px;min-width:100px;padding:0 20px 0 8px;border-radius:7px;
+  height:28px;min-width:100px;padding:0 24px 0 8px;border-radius:7px;
   border:1px solid var(--outline2);background:var(--surface3);
   color:var(--on-surface);font-size:12px;font-family: inherit;
   outline:none;cursor:pointer;transition:border-color .2s,background .3s;
   -webkit-appearance:none;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23888' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 4px center;
+  position:relative;
+}
+.s-select-wrap{position:relative;display:inline-block;}
+.s-select-wrap::after{
+  content:'';position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  width:0;height:0;
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:5px solid #888;pointer-events:none;
 }
 
 /* Groups page */

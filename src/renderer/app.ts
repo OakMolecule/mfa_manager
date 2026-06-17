@@ -1410,7 +1410,7 @@ function renderSettingsPage(): void {
         <div class="settings-card-hd">安全</div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">自动锁定</div><div class="s-sub">闲置后自动锁定</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-lock">${
+          <div class="s-ctrl"><div class="s-select-wrap"><select class="s-select" id="st-lock">${
           [1, 5, 10, 30, 60, 0]
               .map(
                   m => `<option value="${m * 60}"${
@@ -1419,22 +1419,22 @@ function renderSettingsPage(): void {
                       m === 0    ? '从不' :
                           m < 60 ? m + '分钟' :
                                    '1小时'}</option>`)
-              .join('')}</select></div>
+              .join('')}</select></div></div>
         </div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">剪贴板清除</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-clip">${
+          <div class="s-ctrl"><div class="s-select-wrap"><select class="s-select" id="st-clip">${
           [15, 30, 60, 120]
               .map(
                   s => `<option value="${s}"${
                       S.settings.clipboardClearSeconds === s ?
                           ' selected' :
                           ''}>${s}秒</option>`)
-              .join('')}</select></div>
+              .join('')}</select></div></div>
         </div>
         <div class="s-item no-tap">
           <div class="s-body"><div class="s-label">自动隐藏</div><div class="s-sub">显示后自动隐藏密码/验证码</div></div>
-          <div class="s-ctrl"><select class="s-select" id="st-reveal-hide">${
+          <div class="s-ctrl"><div class="s-select-wrap"><select class="s-select" id="st-reveal-hide">${
           [10, 30, 60, 0]
               .map(
                   s => `<option value="${s}"${
@@ -1442,7 +1442,7 @@ function renderSettingsPage(): void {
                           ' selected' :
                           ''}>${
                       s === 0 ? '不自动隐藏' : s + '秒'}</option>`)
-              .join('')}</select></div>
+              .join('')}</select></div></div>
         </div>
       </div>
       <div class="settings-card">
