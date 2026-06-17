@@ -33,6 +33,14 @@
     "directories": {
       "output": "release"
     },
+    "files": [
+      "dist/**/*",
+      "src/renderer/index.html",
+      "src/renderer/fonts/**/*",
+      "src/renderer/styles/**/*",
+      "!src/**/*",
+      "!node_modules"
+    ],
     "linux": {
       "target": "AppImage"
     },
