@@ -32,7 +32,6 @@ function createWindow(): void {
   });
 
   mainWindow.loadFile(path.join(__dirname, '../../src/renderer/index.html'));
-  mainWindow.webContents.openDevTools();
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -335,6 +334,20 @@ ipcMain.handle('vault:exportJson', async (_event, filePath: string) => {
   } catch (e: any) {
     return { ok: false, error: e.message };
   }
+});
+
+// ── IPC: 开发者工具 ──────────────────────────────────────────────────────
+
+ipcMain.handle('devtools:toggle', async () => {
+  if (mainWindow) {
+    if (mainWindow.webContents.isDevToolsOpened()) {
+      mainWindow.webContents.closeDevTools();
+    } else {
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+    return { ok: true, isOpen: mainWindow.webContents.isDevToolsOpened() };
+  }
+  return { ok: false };
 });
 
 // ── IPC: 活动心跳 ─────────────────────────────────────────────────────────

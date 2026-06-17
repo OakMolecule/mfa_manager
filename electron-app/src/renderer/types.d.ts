@@ -82,6 +82,10 @@ interface SettingsApi {
   update(settings: Record<string, any>): Promise<{ ok: boolean }>;
 }
 
+interface DevToolsApi {
+  toggle(): Promise<{ ok: boolean; isOpen?: boolean }>;
+}
+
 interface VaultXAPI {
   vault: VaultApi;
   dialog: DialogApi;
@@ -89,6 +93,7 @@ interface VaultXAPI {
   generator: GeneratorApi;
   theme: ThemeApi;
   settings: SettingsApi;
+  devtools: DevToolsApi;
   onVaultLocked(cb: () => void): void;
   readFile(filePath: string): Promise<{ ok: boolean; content?: string; error?: string }>;
   openExternal(url: string): Promise<{ ok: boolean; error?: string }>;

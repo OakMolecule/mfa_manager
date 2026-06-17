@@ -176,6 +176,9 @@ function setTheme(t: string): void {
 window.vaultxAPI.onVaultLocked(() => {
   S.vaultOpen = false;
   S.entries = [];
+  S.searchQ = '';
+  const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+  if (searchInput) searchInput.value = '';
   renderLock();
   showSnack('金库已自动锁定');
 });
@@ -1441,6 +1444,11 @@ function renderSettingsPage(): void {
         <div class="s-icon" style="background:var(--primary)"><span class="material-icons-round">shield</span></div>
         <div class="s-body"><div class="s-label">VaultX</div><div class="s-sub">版本 1.0.0 · Electron</div></div>
       </div>
+      <div class="s-item" id="st-devtools">
+        <div class="s-icon" style="background:#607D8B"><span class="material-icons-round">code</span></div>
+        <div class="s-body"><div class="s-label">开发者工具</div><div class="s-sub">打开/关闭 DevTools</div></div>
+        <span class="material-icons-round s-chevron">chevron_right</span>
+      </div>
     </div>
   </div>`;
 
@@ -1466,6 +1474,9 @@ function renderSettingsPage(): void {
       importVault();
   (page.querySelector('#st-export') as HTMLElement).onclick = () =>
       exportVault();
+  (page.querySelector('#st-devtools') as HTMLElement).onclick = async () => {
+    await window.vaultxAPI.devtools.toggle();
+  };
 }
 
 async function saveSettings(): Promise<void> {
@@ -1547,6 +1558,9 @@ async function lockVault(): Promise<void> {
   S.vaultOpen = false;
   S.entries = [];
   S.categories = [];
+  S.searchQ = '';
+  const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+  if (searchInput) searchInput.value = '';
   renderLock();
 }
 

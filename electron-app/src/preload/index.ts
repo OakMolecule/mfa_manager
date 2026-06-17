@@ -54,5 +54,9 @@ contextBridge.exposeInMainWorld('vaultxAPI', {
 
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
 
+  devtools: {
+    toggle: () => ipcRenderer.invoke('devtools:toggle'),
+  },
+
   pingActivity: () => ipcRenderer.send('activity:ping'),
 });
