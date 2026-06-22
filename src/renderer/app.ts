@@ -624,6 +624,12 @@ function wireCard(card: HTMLElement, entry: Entry): void {
     closeAllMenus();
     if (!wasOpen) ctxMenu.classList.add('open');
   };
+  card.oncontextmenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeAllMenus();
+    ctxMenu.classList.add('open');
+  };
   (card.querySelector('[data-action="edit"]') as HTMLElement).onclick = (e) => {
     e.stopPropagation();
     closeAllMenus();
@@ -635,6 +641,34 @@ function wireCard(card: HTMLElement, entry: Entry): void {
         closeAllMenus();
         confirmDelete(entry);
       };
+
+  const copyPwBtn = card.querySelector('[data-action="copy-pw"]') as HTMLElement | null;
+  if (copyPwBtn) {
+    copyPwBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      if (entry.password) copyText(entry.password);
+    };
+  }
+
+  const copyTotpBtn = card.querySelector('[data-action="copy-totp"]') as HTMLElement | null;
+  if (copyTotpBtn) {
+    copyTotpBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      const code = card.querySelector('.otp')?.textContent?.replace(/\s/g, '');
+      if (code) copyText(code);
+    };
+  }
+
+  const copyUrlBtn = card.querySelector('[data-action="copy-url"]') as HTMLElement | null;
+  if (copyUrlBtn) {
+    copyUrlBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeAllMenus();
+      if (entry.url) copyText(entry.url);
+    };
+  }
 
   const urlEl = card.querySelector('.r3-url') as HTMLElement | null;
   if (urlEl) {
